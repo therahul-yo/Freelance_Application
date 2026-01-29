@@ -25,12 +25,18 @@ const PostGig = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.title.trim() || !formData.description.trim() || !formData.price) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const gigData = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         category: formData.category,
         price: parseFloat(formData.price),
         deliveryTime: formData.deliveryTime,
@@ -38,8 +44,8 @@ const PostGig = () => {
       };
 
       await axios.post("http://localhost:5001/api/gigs", gigData);
-      toast.success("Gig posted successfully!");
-      navigate("/gigs");
+      toast.success("Gig published successfully!");
+      navigate("/dashboard");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to post gig");
     } finally {
@@ -47,11 +53,24 @@ const PostGig = () => {
     }
   };
 
+  // Redirect if not logged in or not a freelancer
   if (!user) {
     return (
       <div className="container" style={{ paddingTop: "60px", textAlign: "center" }}>
-        <h2>Please login to post a gig</h2>
-        <Button onClick={() => navigate("/login")} style={{ marginTop: "20px" }}>Login</Button>
+        <h2 style={{ marginBottom: "16px" }}>Please login to continue</h2>
+        <Button onClick={() => navigate("/login")}>Login</Button>
+      </div>
+    );
+  }
+
+  if (user.role !== "freelancer") {
+    return (
+      <div className="container" style={{ paddingTop: "60px", textAlign: "center" }}>
+        <h2 style={{ marginBottom: "16px" }}>Only freelancers can create gigs</h2>
+        <p style={{ color: "var(--color-text-secondary)", marginBottom: "20px" }}>
+          As a client, you can post jobs instead.
+        </p>
+        <Button onClick={() => navigate("/post-job")}>Post a Job</Button>
       </div>
     );
   }

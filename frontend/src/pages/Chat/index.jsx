@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import io from "socket.io-client";
@@ -20,61 +20,56 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [socketConnected, setSocketConnected] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  // Initialize socket
+  // Redirect if not logged in
   useEffect(() => {
     if (!user) {
       navigate("/login");
-      return;
     }
+  }, [user, navigate]);
+
+  // Initialize socket
+  useEffect(() => {
+    if (!user) return;
     
     socket = io(ENDPOINT);
     socket.emit("setup", user);
-    socket.on("connected", () => setSocketConnected(true));
     
-    return () => {
-      if (socket) socket.disconnect();
-    };
-  }, [user]);
-
-  // Fetch user's chats
-  useEffect(() => {
-    if (user) {
+    socket.on("message recieved", (newMsg) => {
+      if (selectedChat && selectedChat._id === newMsg.chat._id) {
+        setMessages(prev => [...prev, newMsg]);
+      }
       fetchChats();
-    }
+    });
+
+    return () => {
+      if (socket) {
+        socket.off("message recieved");
+        socket.disconnect();
+      }
+    };
+  }, [user, selectedChat]);
+
+  // Fetch chats on load
+  useEffect(() => {
+    if (user) fetchChats();
   }, [user]);
 
-  // Handle incoming chat from navigation
+  // Handle navigation state (when coming from "Hire Me" button)
   useEffect(() => {
     if (location.state?.selectedChatId && chats.length > 0) {
       const chat = chats.find(c => c._id === location.state.selectedChatId);
       if (chat) {
         setSelectedChat(chat);
         fetchMessages(chat._id);
+        // Clear the state to prevent re-selection on refresh
+        window.history.replaceState({}, document.title);
       }
     }
   }, [location.state, chats]);
 
-  // Listen for new messages
-  useEffect(() => {
-    if (!socket) return;
-    
-    const handleNewMessage = (newMsg) => {
-      if (selectedChat && selectedChat._id === newMsg.chat._id) {
-        setMessages(prev => [...prev, newMsg]);
-      }
-      fetchChats();
-    };
-
-    socket.on("message recieved", handleNewMessage);
-
-    return () => {
-      socket.off("message recieved", handleNewMessage);
-    };
-  }, [selectedChat]);
-
-  // Scroll to bottom
+  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -102,26 +97,33 @@ const Chat = () => {
 
   const selectChat = (chat) => {
     setSelectedChat(chat);
+    setMessages([]);
     fetchMessages(chat._id);
   };
 
   const sendMessage = async (e) => {
     if (e) e.preventDefault();
-    if (!newMessage.trim() || !selectedChat) return;
+    if (!newMessage.trim() || !selectedChat || sending) return;
+
+    setSending(true);
+    const messageText = newMessage;
+    setNewMessage("");
 
     try {
       const { data } = await axios.post(`${ENDPOINT}/api/message`, {
-        content: newMessage,
+        content: messageText,
         chatId: selectedChat._id
       });
       
       if (socket) socket.emit("new message", data);
       setMessages(prev => [...prev, data]);
-      setNewMessage("");
       fetchChats();
     } catch (error) {
       console.error("Send message error:", error);
       toast.error("Failed to send message");
+      setNewMessage(messageText); // Restore message on failure
+    } finally {
+      setSending(false);
     }
   };
 
@@ -133,12 +135,13 @@ const Chat = () => {
   };
 
   const getChatName = (chat) => {
-    if (!chat.users) return "Chat";
-    const otherUser = chat.users.find(u => u._id !== user._id);
+    if (!chat?.users) return "Chat";
+    const otherUser = chat.users.find(u => u._id !== user?._id);
     return otherUser?.name || "Chat";
   };
 
   const formatTime = (dateString) => {
+    if (!dateString) return "";
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
@@ -174,11 +177,14 @@ const Chat = () => {
             <p style={{ padding: "20px", color: "var(--color-text-secondary)" }}>Loading...</p>
           ) : chats.length === 0 ? (
             <div style={{ padding: "40px 20px", textAlign: "center" }}>
-              <p style={{ color: "var(--color-text-secondary)", marginBottom: "16px", fontSize: "14px" }}>
+              <p style={{ color: "var(--color-text-secondary)", marginBottom: "8px", fontSize: "14px" }}>
                 No conversations yet
               </p>
               <p style={{ color: "var(--color-text-tertiary)", fontSize: "13px" }}>
-                Start a conversation by hiring a freelancer or applying to a job
+                {user.role === "client" 
+                  ? "Browse talent and click 'Hire Me' to start a chat"
+                  : "Apply to jobs or wait for clients to contact you"
+                }
               </p>
             </div>
           ) : (
@@ -191,12 +197,13 @@ const Chat = () => {
                   borderBottom: "1px solid var(--color-border)",
                   cursor: "pointer",
                   background: selectedChat?._id === chat._id ? "var(--color-bg-secondary)" : "transparent",
+                  transition: "background 0.15s"
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                   <h4 style={{ fontSize: "14px" }}>{getChatName(chat)}</h4>
                   <span style={{ fontSize: "11px", color: "var(--color-text-tertiary)" }}>
-                    {formatChatTime(chat.latestMessage?.createdAt)}
+                    {formatChatTime(chat.latestMessage?.createdAt || chat.createdAt)}
                   </span>
                 </div>
                 <p style={{ 
@@ -225,29 +232,36 @@ const Chat = () => {
               justifyContent: "space-between",
               alignItems: "center"
             }}>
-              <h3 style={{ fontSize: "16px" }}>{getChatName(selectedChat)}</h3>
+              <div>
+                <h3 style={{ fontSize: "16px" }}>{getChatName(selectedChat)}</h3>
+              </div>
             </div>
 
             <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
               {messages.length === 0 ? (
-                <p style={{ textAlign: "center", color: "var(--color-text-tertiary)" }}>
-                  No messages yet. Say hello!
-                </p>
+                <div style={{ textAlign: "center", marginTop: "40px" }}>
+                  <p style={{ color: "var(--color-text-tertiary)", marginBottom: "8px" }}>
+                    No messages yet
+                  </p>
+                  <p style={{ fontSize: "13px", color: "var(--color-text-tertiary)" }}>
+                    Send a message to start the conversation!
+                  </p>
+                </div>
               ) : (
                 messages.map(msg => (
                   <div
                     key={msg._id}
                     style={{
                       display: "flex",
-                      justifyContent: msg.sender._id === user._id ? "flex-end" : "flex-start",
+                      justifyContent: msg.sender?._id === user._id ? "flex-end" : "flex-start",
                       marginBottom: "16px"
                     }}
                   >
                     <div style={{
                       maxWidth: "60%",
-                      background: msg.sender._id === user._id ? "var(--color-bg-tertiary)" : "var(--color-bg-secondary)",
+                      background: msg.sender?._id === user._id ? "var(--color-bg-tertiary)" : "var(--color-bg-secondary)",
                       padding: "12px 16px",
-                      borderRadius: msg.sender._id === user._id ? "16px 16px 4px 16px" : "16px 16px 16px 4px"
+                      borderRadius: msg.sender?._id === user._id ? "16px 16px 4px 16px" : "16px 16px 16px 4px"
                     }}>
                       <p style={{ fontSize: "14px", lineHeight: "1.5" }}>{msg.content}</p>
                       <p style={{ fontSize: "11px", color: "var(--color-text-tertiary)", marginTop: "6px" }}>
@@ -270,17 +284,21 @@ const Chat = () => {
                   onKeyDown={handleKeyDown}
                   className="input-field"
                   style={{ flex: 1 }}
+                  disabled={sending}
                 />
-                <Button type="submit">Send</Button>
+                <Button type="submit" disabled={sending || !newMessage.trim()}>
+                  {sending ? "..." : "Send"}
+                </Button>
               </div>
             </form>
           </>
         ) : (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ textAlign: "center" }}>
-              <h3 style={{ fontSize: "18px", marginBottom: "8px" }}>Select a conversation</h3>
+              <p style={{ fontSize: "40px", marginBottom: "16px" }}>💬</p>
+              <h3 style={{ fontSize: "18px", marginBottom: "8px" }}>Your Messages</h3>
               <p style={{ fontSize: "14px", color: "var(--color-text-secondary)" }}>
-                Choose a chat from the list to start messaging
+                Select a conversation to start chatting
               </p>
             </div>
           </div>

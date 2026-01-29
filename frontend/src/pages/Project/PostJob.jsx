@@ -14,12 +14,9 @@ const PostJob = () => {
     title: "",
     description: "",
     category: "Web Development",
-    budgetType: "fixed",
-    budgetMin: "",
-    budgetMax: "",
-    experienceLevel: "Intermediate",
-    duration: "1 to 3 months",
-    skills: ""
+    budget: "",
+    deadline: "",
+    skillsRequired: ""
   });
 
   const handleChange = (e) => {
@@ -28,25 +25,27 @@ const PostJob = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.title.trim() || !formData.description.trim() || !formData.budget) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const jobData = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         category: formData.category,
-        budget: parseFloat(formData.budgetMax) || parseFloat(formData.budgetMin),
-        budgetType: formData.budgetType,
-        budgetMin: parseFloat(formData.budgetMin),
-        budgetMax: parseFloat(formData.budgetMax),
-        experienceLevel: formData.experienceLevel,
-        duration: formData.duration,
-        skillsRequired: formData.skills.split(",").map(s => s.trim()).filter(s => s)
+        budget: parseFloat(formData.budget),
+        deadline: formData.deadline || undefined,
+        skillsRequired: formData.skillsRequired.split(",").map(s => s.trim()).filter(s => s)
       };
 
       await axios.post("http://localhost:5001/api/projects", jobData);
       toast.success("Job posted successfully!");
-      navigate("/projects");
+      navigate("/dashboard");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to post job");
     } finally {
@@ -54,11 +53,24 @@ const PostJob = () => {
     }
   };
 
+  // Redirect if not logged in or not a client
   if (!user) {
     return (
       <div className="container" style={{ paddingTop: "60px", textAlign: "center" }}>
-        <h2>Please login to post a job</h2>
-        <Button onClick={() => navigate("/login")} style={{ marginTop: "20px" }}>Login</Button>
+        <h2 style={{ marginBottom: "16px" }}>Please login to continue</h2>
+        <Button onClick={() => navigate("/login")}>Login</Button>
+      </div>
+    );
+  }
+
+  if (user.role !== "client") {
+    return (
+      <div className="container" style={{ paddingTop: "60px", textAlign: "center" }}>
+        <h2 style={{ marginBottom: "16px" }}>Only clients can post jobs</h2>
+        <p style={{ color: "var(--color-text-secondary)", marginBottom: "20px" }}>
+          As a freelancer, you can create gigs instead.
+        </p>
+        <Button onClick={() => navigate("/post-gig")}>Create a Gig</Button>
       </div>
     );
   }
@@ -67,7 +79,7 @@ const PostJob = () => {
     <div className="container" style={{ paddingTop: "40px", paddingBottom: "60px", maxWidth: "700px" }}>
       <h1 style={{ fontSize: "28px", marginBottom: "8px" }}>Post a Job</h1>
       <p style={{ color: "var(--color-text-secondary)", marginBottom: "32px", fontSize: "14px" }}>
-        Describe what you need done and find the perfect freelancer
+        Describe your project and find the perfect freelancer
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -79,7 +91,7 @@ const PostJob = () => {
             name="title"
             value={formData.title}
             onChange={handleChange}
-            placeholder="e.g. Build a responsive e-commerce website"
+            placeholder="e.g., Build a responsive e-commerce website"
             className="input-field"
             required
           />
@@ -92,7 +104,7 @@ const PostJob = () => {
             name="description"
             value={formData.description}
             onChange={handleChange}
-            placeholder="Describe your project in detail. Include requirements, deliverables, and timeline expectations."
+            placeholder="Describe your project in detail. What are the requirements? What outcome do you expect?"
             className="input-field"
             rows="6"
             style={{ resize: "vertical", minHeight: "150px" }}
@@ -115,89 +127,36 @@ const PostJob = () => {
             <option>Data Science</option>
             <option>Writing</option>
             <option>Marketing</option>
+            <option>Video & Animation</option>
+            <option>Music & Audio</option>
           </select>
         </div>
 
-        {/* Budget Type */}
+        {/* Budget */}
         <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Budget Type</label>
-          <div style={{ display: "flex", gap: "12px" }}>
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, budgetType: "fixed" })}
-              className={formData.budgetType === "fixed" ? "btn btn-primary" : "btn btn-outline"}
-              style={{ flex: 1 }}
-            >
-              Fixed Price
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, budgetType: "hourly" })}
-              className={formData.budgetType === "hourly" ? "btn btn-primary" : "btn btn-outline"}
-              style={{ flex: 1 }}
-            >
-              Hourly Rate
-            </button>
-          </div>
+          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Budget ($) *</label>
+          <input
+            type="number"
+            name="budget"
+            value={formData.budget}
+            onChange={handleChange}
+            placeholder="500"
+            className="input-field"
+            required
+            min="10"
+          />
         </div>
 
-        {/* Budget Range */}
+        {/* Deadline */}
         <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>
-            Budget Range {formData.budgetType === "hourly" ? "($/hr)" : "($)"}
-          </label>
-          <div style={{ display: "flex", gap: "12px" }}>
-            <input
-              type="number"
-              name="budgetMin"
-              value={formData.budgetMin}
-              onChange={handleChange}
-              placeholder="Min"
-              className="input-field"
-              required
-            />
-            <input
-              type="number"
-              name="budgetMax"
-              value={formData.budgetMax}
-              onChange={handleChange}
-              placeholder="Max"
-              className="input-field"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Experience Level */}
-        <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Experience Level</label>
-          <select
-            name="experienceLevel"
-            value={formData.experienceLevel}
+          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Deadline (optional)</label>
+          <input
+            type="date"
+            name="deadline"
+            value={formData.deadline}
             onChange={handleChange}
             className="input-field"
-          >
-            <option>Entry Level</option>
-            <option>Intermediate</option>
-            <option>Expert</option>
-          </select>
-        </div>
-
-        {/* Duration */}
-        <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Project Duration</label>
-          <select
-            name="duration"
-            value={formData.duration}
-            onChange={handleChange}
-            className="input-field"
-          >
-            <option>Less than 1 week</option>
-            <option>1 to 4 weeks</option>
-            <option>1 to 3 months</option>
-            <option>3 to 6 months</option>
-            <option>More than 6 months</option>
-          </select>
+          />
         </div>
 
         {/* Skills */}
@@ -205,10 +164,10 @@ const PostJob = () => {
           <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Required Skills</label>
           <input
             type="text"
-            name="skills"
-            value={formData.skills}
+            name="skillsRequired"
+            value={formData.skillsRequired}
             onChange={handleChange}
-            placeholder="e.g. React, Node.js, MongoDB (comma separated)"
+            placeholder="React, Node.js, MongoDB (comma separated)"
             className="input-field"
           />
         </div>

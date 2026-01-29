@@ -36,21 +36,21 @@ const LandingPage = () => (
 
     {/* Features Section */}
     <div style={{ borderTop: "1px solid var(--color-border)", borderBottom: "1px solid var(--color-border)" }}>
-      <div className="container" style={{ padding: "40px 24px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "32px" }}>
+      <div className="container" style={{ padding: "40px 24px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "32px", textAlign: "center" }}>
         <div>
-          <p style={{ fontSize: "20px", fontWeight: "600", marginBottom: "4px" }}>🎯</p>
+          <p style={{ fontSize: "40px", marginBottom: "8px" }}>🎯</p>
           <p style={{ fontSize: "14px", color: "var(--color-text-tertiary)" }}>Direct Hiring</p>
         </div>
         <div>
-          <p style={{ fontSize: "20px", fontWeight: "600", marginBottom: "4px" }}>💬</p>
+          <p style={{ fontSize: "40px", marginBottom: "8px" }}>💬</p>
           <p style={{ fontSize: "14px", color: "var(--color-text-tertiary)" }}>Real-time Chat</p>
         </div>
         <div>
-          <p style={{ fontSize: "20px", fontWeight: "600", marginBottom: "4px" }}>📋</p>
+          <p style={{ fontSize: "40px", marginBottom: "8px" }}>📋</p>
           <p style={{ fontSize: "14px", color: "var(--color-text-tertiary)" }}>Easy Proposals</p>
         </div>
         <div>
-          <p style={{ fontSize: "20px", fontWeight: "600", marginBottom: "4px" }}>🔒</p>
+          <p style={{ fontSize: "40px", marginBottom: "8px" }}>🔒</p>
           <p style={{ fontSize: "14px", color: "var(--color-text-tertiary)" }}>Secure Platform</p>
         </div>
       </div>
