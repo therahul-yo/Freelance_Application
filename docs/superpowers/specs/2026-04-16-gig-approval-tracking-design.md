@@ -1,48 +1,68 @@
-# Design Spec: Gig Approval and Tracking
+# Design Spec: Gig Approval and Tracking (v2)
 
-Turn the existing "messaging-only" flow into a fully working hiring and tracking process for both Gigs and Projects.
+Turn the existing "messaging-only" flow into a fully working hiring and tracking process for both Clients and Freelancers.
 
 ## Problem Statement
-Users can currently message each other, but there is no formal "Hire" or "Purchase" step for Gigs. For Projects, the "Accept Proposal" button is hidden deep in the Project Details page, making it hard to approve a freelancer while chatting.
+The current system lacks a formal "Hire" step for Gigs and makes it difficult to manage projects from the chat. Freelancers also have no way to signal that they have completed work, and neither side has a unified view of their active obligations.
 
 ## Goals
-- Allow clients to "Buy" a Gig directly.
-- Allow clients to "Hire" a freelancer directly from the Chat window.
-- Track all active work (Gigs and Projects) in a unified "My Orders" or "Manage Projects" view.
+- **Client:** "Buy" a Gig or "Hire" a Freelancer directly.
+- **Freelancer:** Track orders and "Deliver" completed work.
+- **Both:** A unified dashboard to manage the lifecycle of a job (Pending -> Active -> Delivered -> Completed).
 
 ## Proposed Changes
 
 ### 1. Data Models & Backend
+- **Project Status Update:** Add `delivered` to the `status` enum in `Project` model.
+  - `status`: ["open", "in-progress", "delivered", "completed", "cancelled"]
 - **Gig Purchase:** Add `POST /api/gigs/:id/purchase`.
   - Creates a `Project` with `status: "in-progress"`.
-  - Sets `assignedFreelancer: gig.freelancer`.
-  - Sets `client: req.user._id`.
-  - Sets `budget: gig.price`.
-  - Sets `title: gig.title`.
-- **Chat Context:** Update `Chat` model (optional) or just use the existing chat to link to projects.
-  - When a chat is started from a Gig/Project, store that `contextId` in the Chat object.
+  - Links `client` and `assignedFreelancer`.
+- **Status Control:** 
+  - Freelancer can move status from `in-progress` to `delivered`.
+  - Client can move status from `delivered` to `completed`.
 
 ### 2. Frontend Components
-- **GigDetails Page:**
-  - Replace "Contact freelancer" with a primary **"Order Now"** button and a secondary "Message" button.
-- **Chat Interface:**
-  - Add a **Context Header Bar** at the top of the message area.
-  - Show "Discussing: [Project/Gig Title]".
-  - If a Client is chatting with a Freelancer who has a `pending` bid on that project, show a **"Hire Now"** button in the header.
-  - If they are chatting about a Gig, show an **"Order Gig"** button in the header.
-- **Dashboard / My Projects:**
-  - Create a unified view for both roles.
-  - **Client:** "My Hires" (active), "Pending Proposals", "Past Work".
-  - **Freelancer:** "My Jobs" (active), "Sent Proposals", "Finished Work".
 
-### 3. User Flow
-1. Client finds a Gig.
-2. Client clicks "Order Now" OR messages the Freelancer first.
-3. If messaging, the Client can click "Order Now" from the top of the chat at any time.
-4. Once ordered, a "Project" is created in `in-progress` state.
-5. Both see the project in their dashboard to track completion.
+#### **Chat Context Header**
+- Show the "Current Topic" (Project/Gig) at the top of the chat.
+- **Client Actions:**
+  - Show "Hire Now" (if pending bid exists).
+  - Show "Order Gig" (if chatting from a Gig).
+  - Show "Complete & Review" (if status is `delivered`).
+- **Freelancer Actions:**
+  - Show "Deliver Work" (if status is `in-progress`).
+
+#### **Unified Dashboard (`/dashboard`)**
+- **Client Mode:**
+  - **Hires:** List of `in-progress` and `delivered` projects.
+  - **Proposals:** List of `open` projects with their bid counts.
+  - **History:** List of `completed` projects.
+- **Freelancer Mode:**
+  - **Active Work:** List of `in-progress` projects where they are assigned.
+  - **Pending Review:** List of `delivered` projects waiting for client approval.
+  - **Proposals:** List of bids they have sent.
+  - **Earnings/History:** List of `completed` projects.
+
+### 3. User Flows
+
+#### **The Gig Flow**
+1. Client clicks "Order Now" on a Gig page.
+2. System creates an `in-progress` Project.
+3. Freelancer sees the new order in their Dashboard.
+4. Freelancer works and clicks "Deliver Work".
+5. Client gets notified (in Chat/Dashboard) and clicks "Approve".
+6. Project moves to `completed`.
+
+#### **The Project Flow**
+1. Client posts a Project.
+2. Freelancer bids.
+3. Client/Freelancer chat.
+4. Client clicks "Hire Now" in the Chat Header.
+5. Project moves to `in-progress`.
+6. (Rest follows Gig Flow steps 3-6).
 
 ## Success Criteria
-- A Client can go from a Gig listing to an "in-progress" project in 2 clicks.
-- A Client can hire a freelancer from the Chat interface.
-- Both users can see their active "Work in Progress" in a central location.
+- Both Clients and Freelancers have specific actions to move a project forward.
+- The Dashboard provides a "one-stop shop" for all active business.
+- Chat is no longer just for talking; it's the control center for the hire.
