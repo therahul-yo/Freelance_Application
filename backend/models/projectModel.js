@@ -10,10 +10,12 @@ const projectSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
     },
     description: {
       type: String,
       required: true,
+      trim: true,
     },
     category: {
       type: String,
@@ -23,6 +25,7 @@ const projectSchema = new mongoose.Schema(
     budget: {
       type: Number,
       required: true,
+      min: 1,
     },
     budgetType: {
       type: String,
@@ -49,7 +52,7 @@ const projectSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["open", "in-progress", "completed", "cancelled"],
+      enum: ["open", "in-progress", "delivered", "completed", "cancelled"],
       default: "open",
     },
     skillsRequired: [{ type: String }],
