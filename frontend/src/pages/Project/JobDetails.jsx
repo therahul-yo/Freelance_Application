@@ -1,215 +1,468 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import axios from "axios";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../lib/api";
+import { formatCurrency, formatRelativeDate, getUserInitials } from "../../utils/formatters";
+
+const initialProposal = {
+  coverLetter: "",
+  bidAmount: "",
+  deliveryTime: "1 week",
+};
 
 const JobDetails = () => {
   const { id } = useParams();
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [job, setJob] = useState(null);
+  const [bids, setBids] = useState([]);
+  const [myBid, setMyBid] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showProposalForm, setShowProposalForm] = useState(false);
-  const [proposal, setProposal] = useState({ coverLetter: "", bidAmount: "", deliveryTime: "1 week" });
+  const [proposal, setProposal] = useState(initialProposal);
   const [submitting, setSubmitting] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const isOwner = useMemo(() => {
+    if (!job || !user) return false;
+    return job.client?._id === user._id;
+  }, [job, user]);
+
+  const loadJob = useCallback(async () => {
+    const { data } = await api.get(`/projects/${id}`);
+    setJob(data);
+    return data;
+  }, [id]);
 
   useEffect(() => {
-    const fetchJob = async () => {
+    const load = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5001/api/projects/${id}`);
-        setJob(data);
+        const project = await loadJob();
+
+        if (user?.role === "client" && project.client?._id === user._id) {
+          const { data } = await api.get(`/bids/project/${id}`);
+          setBids(data);
+        }
+
+        if (user?.role === "freelancer") {
+          const { data } = await api.get("/bids/my");
+          const matchingBid = data.find((bid) => bid.project?._id === id);
+          setMyBid(matchingBid || null);
+        }
       } catch (error) {
-        toast.error("Job not found");
+        toast.error(error.response?.data?.message || "Project not found");
         navigate("/projects");
       } finally {
         setLoading(false);
       }
     };
-    fetchJob();
-  }, [id]);
 
-  const handleSubmitProposal = async (e) => {
-    e.preventDefault();
+    load();
+  }, [id, loadJob, navigate, user]);
+
+  const startChat = async () => {
     if (!user) {
-      toast.info("Please login to submit a proposal");
+      toast.info("Log in first to start a conversation.");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const { data } = await api.post("/chat", {
+        userId: job.client._id,
+        contextId: job._id,
+        contextType: "project",
+        contextTitle: job.title,
+      });
+
+      navigate("/chat", { state: { selectedChatId: data._id } });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not start chat");
+    }
+  };
+
+  const messageFreelancer = async (bid) => {
+    try {
+      const { data } = await api.post("/chat", {
+        userId: bid.freelancer._id,
+        contextId: job._id,
+        contextType: "project",
+        contextTitle: job.title,
+        contextBidId: bid._id,
+      });
+
+      navigate("/chat", { state: { selectedChatId: data._id } });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not start chat");
+    }
+  };
+
+  const submitProposal = async (event) => {
+    event.preventDefault();
+
+    if (!user) {
+      toast.info("Log in first to submit a proposal.");
       navigate("/login");
       return;
     }
 
     setSubmitting(true);
+
     try {
-      await axios.post("http://localhost:5001/api/bids", {
+      const { data } = await api.post("/bids", {
         project: id,
-        amount: parseFloat(proposal.bidAmount),
+        amount: Number(proposal.bidAmount),
         proposal: proposal.coverLetter,
-        deliveryTime: proposal.deliveryTime
+        deliveryTime: proposal.deliveryTime,
       });
-      toast.success("Proposal submitted successfully!");
+
+      setMyBid(data);
+      setProposal(initialProposal);
       setShowProposalForm(false);
+      await loadJob();
+      toast.success("Proposal submitted.");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to submit proposal");
+      toast.error(error.response?.data?.message || "Proposal could not be submitted");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const startChat = async () => {
-    if (!user) {
-      toast.info("Please login to message");
-      navigate("/login");
-      return;
-    }
+  const acceptBid = async (bidId) => {
     try {
-      const { data } = await axios.post("http://localhost:5001/api/chat", {
-        userId: job.client._id || job.client
-      });
-      navigate("/chat", { state: { selectedChatId: data._id } });
+      await api.put(`/bids/${bidId}/accept`);
+      const [projectResponse, bidsResponse] = await Promise.all([
+        api.get(`/projects/${id}`),
+        api.get(`/bids/project/${id}`),
+      ]);
+      setJob(projectResponse.data);
+      setBids(bidsResponse.data);
+      toast.success("Proposal accepted. Project moved to in-progress.");
     } catch (error) {
-      toast.error("Could not start chat");
+      toast.error(error.response?.data?.message || "Could not accept proposal");
+    }
+  };
+
+  const updateStatus = async (status) => {
+    setUpdatingStatus(true);
+
+    try {
+      const { data } = await api.put(`/projects/${id}/status`, { status });
+      setJob(data);
+      toast.success(`Project marked as ${status}.`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Status update failed");
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="container" style={{ paddingTop: "60px" }}>
-        <p style={{ color: "var(--color-text-secondary)" }}>Loading...</p>
+      <div className="container page-section">
+        <div className="card-static neo-loading" style={{ padding: 40 }}>Loading project...</div>
       </div>
     );
   }
 
   if (!job) return null;
 
-  return (
-    <div className="container" style={{ paddingTop: "40px", paddingBottom: "60px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: "32px" }}>
-        {/* Main Content */}
-        <div>
-          <p style={{ fontSize: "12px", color: "var(--color-text-tertiary)", marginBottom: "8px" }}>
-            Posted {new Date(job.createdAt).toLocaleDateString()}
-          </p>
-          <h1 style={{ fontSize: "24px", marginBottom: "16px" }}>{job.title}</h1>
-          
-          {/* Meta */}
-          <div style={{ display: "flex", gap: "16px", marginBottom: "24px", fontSize: "13px", color: "var(--color-text-secondary)" }}>
-            <span>{job.category}</span>
-            <span>•</span>
-            <span>{job.experienceLevel || "Intermediate"}</span>
-            <span>•</span>
-            <span>{job.duration || "1-3 months"}</span>
-          </div>
+  const statusBadge = (status) => {
+    const map = { open: 'badge-blue', 'in-progress': 'badge-orange', delivered: 'badge-purple', completed: 'badge-green', cancelled: 'badge-pink' };
+    return map[status] || '';
+  };
 
-          {/* Description */}
-          <div style={{ marginBottom: "32px" }}>
-            <h3 style={{ fontSize: "16px", marginBottom: "12px" }}>Description</h3>
-            <p style={{ fontSize: "14px", color: "var(--color-text-secondary)", lineHeight: "1.7", whiteSpace: "pre-wrap" }}>
+  return (
+    <div className="container page-section">
+      <div className="two-column-grid">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Job Info Card */}
+          <div className="card-static">
+            <p style={{ color: "var(--nb-text-muted)", fontSize: 13, marginBottom: 10, fontWeight: 600, textTransform: 'uppercase' }}>
+              Posted {formatRelativeDate(job.createdAt)}
+            </p>
+            <h1 style={{ fontSize: 'clamp(28px, 4vw, 40px)', marginBottom: 14, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
+              {job.title}
+            </h1>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+              <span className="badge badge-blue">{job.category}</span>
+              <span className="badge">{job.experienceLevel || "Intermediate"}</span>
+              <span className="badge badge-purple">{job.duration || "1 to 3 months"}</span>
+              <span className={`badge ${statusBadge(job.status)}`}>{job.status}</span>
+            </div>
+            <p style={{ color: "var(--nb-text-secondary)", fontSize: 16, marginBottom: 24, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
               {job.description}
             </p>
-          </div>
-
-          {/* Skills */}
-          {job.skillsRequired && job.skillsRequired.length > 0 && (
-            <div style={{ marginBottom: "32px" }}>
-              <h3 style={{ fontSize: "16px", marginBottom: "12px" }}>Skills Required</h3>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                {job.skillsRequired.map(skill => (
-                  <span key={skill} className="badge">{skill}</span>
+            {job.skillsRequired?.length ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+                {job.skillsRequired.map((skill, i) => (
+                  <span key={skill} className={`badge ${['badge-lime', 'badge-orange', 'badge-blue', 'badge-pink', 'badge-purple'][i % 5]}`}>
+                    {skill}
+                  </span>
                 ))}
               </div>
+            ) : null}
+          </div>
+
+          {/* Assigned Freelancer */}
+          {job.assignedFreelancer && (
+            <div className="card-static" style={{ background: 'var(--nb-lime)' }}>
+              <span className="badge badge-dark" style={{ marginBottom: 12 }}>✅ Assigned</span>
+              <h3 style={{ fontSize: 22, marginBottom: 4, fontFamily: 'var(--font-heading)' }}>{job.assignedFreelancer.name}</h3>
+              <p style={{ color: "var(--nb-text-secondary)" }}>
+                {job.assignedFreelancer.profile?.title || "Freelancer"}
+              </p>
             </div>
           )}
 
           {/* Proposal Form */}
           {showProposalForm && (
-            <div className="card" style={{ marginTop: "32px" }}>
-              <h3 style={{ fontSize: "18px", marginBottom: "20px" }}>Submit a Proposal</h3>
-              <form onSubmit={handleSubmitProposal}>
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Your Bid Amount ($)</label>
-                  <input
-                    type="number"
-                    value={proposal.bidAmount}
-                    onChange={(e) => setProposal({ ...proposal, bidAmount: e.target.value })}
-                    placeholder="Enter your price"
-                    className="input-field"
-                    required
-                  />
+            <form className="card-static" style={{ background: 'var(--nb-cream)' }} onSubmit={submitProposal}>
+              <span className="badge badge-pink" style={{ marginBottom: 16 }}>📝 Proposal</span>
+              <h2 style={{ fontSize: 26, marginBottom: 20, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>Submit Proposal</h2>
+              <div style={{ marginBottom: 18 }}>
+                <label htmlFor="bidAmount" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+                  Your price ($)
+                </label>
+                <input
+                  id="bidAmount"
+                  className="input-field"
+                  type="number"
+                  min="1"
+                  required
+                  value={proposal.bidAmount}
+                  onChange={(event) =>
+                    setProposal((current) => ({ ...current, bidAmount: event.target.value }))
+                  }
+                />
+              </div>
+              <div style={{ marginBottom: 18 }}>
+                <label htmlFor="deliveryTime" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+                  Delivery time
+                </label>
+                <select
+                  id="deliveryTime"
+                  className="input-field"
+                  value={proposal.deliveryTime}
+                  onChange={(event) =>
+                    setProposal((current) => ({ ...current, deliveryTime: event.target.value }))
+                  }
+                >
+                  <option>Less than 1 week</option>
+                  <option>1 week</option>
+                  <option>2 weeks</option>
+                  <option>1 month</option>
+                  <option>2+ months</option>
+                </select>
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label htmlFor="coverLetter" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+                  Cover letter
+                </label>
+                <textarea
+                  id="coverLetter"
+                  className="input-field"
+                  rows="7"
+                  required
+                  value={proposal.coverLetter}
+                  onChange={(event) =>
+                    setProposal((current) => ({ ...current, coverLetter: event.target.value }))
+                  }
+                  style={{ resize: "vertical" }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <Button type="button" variant="outline" onClick={() => setShowProposalForm(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? "Submitting..." : "Send Proposal →"}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {/* Client: Incoming Proposals */}
+          {isOwner && (
+            <div className="card-static">
+              <span className="badge badge-orange" style={{ marginBottom: 16 }}>📋 Proposals</span>
+              <h2 style={{ fontSize: 28, marginBottom: 8, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
+                Incoming Proposals
+              </h2>
+              <p style={{ color: "var(--nb-text-secondary)", fontSize: 14, marginBottom: 20 }}>
+                Review applicants and accept one to start delivery.
+              </p>
+
+              {bids.length === 0 ? (
+                <p style={{ color: "var(--nb-text-secondary)", padding: 24, background: 'var(--nb-cream)', border: 'var(--nb-border-thin)', textAlign: 'center' }}>
+                  No proposals yet. Freelancers will appear here once they pitch.
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {bids.map((bid) => (
+                    <div key={bid._id} className="card" style={{ background: 'var(--nb-cream)' }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                        <div style={{ flex: 1, minWidth: 260 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                            <div style={{
+                              width: 44,
+                              height: 44,
+                              border: 'var(--nb-border)',
+                              display: 'grid',
+                              placeItems: 'center',
+                              fontWeight: 800,
+                              background: 'var(--nb-yellow)',
+                              fontSize: 16,
+                            }}>
+                              {getUserInitials(bid.freelancer?.name)}
+                            </div>
+                            <div>
+                              <h3 style={{ fontSize: 18, fontFamily: 'var(--font-heading)' }}>{bid.freelancer?.name}</h3>
+                              <p style={{ color: "var(--nb-text-secondary)", fontSize: 13 }}>
+                                {bid.freelancer?.profile?.title || "Freelancer"}
+                              </p>
+                            </div>
+                          </div>
+                          <p style={{ color: "var(--nb-text-secondary)", marginBottom: 10, whiteSpace: "pre-wrap", fontSize: 14 }}>
+                            {bid.proposal}
+                          </p>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            {bid.freelancer?.profile?.skills?.slice(0, 4).map((skill, i) => (
+                              <span key={skill} className={`badge ${['badge-blue', 'badge-lime', 'badge-purple', 'badge-orange'][i % 4]}`} style={{ fontSize: 11, padding: '3px 8px' }}>
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div style={{ width: 200 }}>
+                          <p style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, fontFamily: 'var(--font-display)' }}>
+                            {formatCurrency(bid.amount)}
+                          </p>
+                          <p style={{ color: "var(--nb-text-secondary)", marginBottom: 6, fontSize: 13 }}>
+                            📦 Delivery: {bid.deliveryTime}
+                          </p>
+                          <p style={{ marginBottom: 14, fontSize: 13 }}>
+                            <span className={`badge ${bid.status === 'accepted' ? 'badge-green' : ''}`} style={{ fontSize: 11, padding: '3px 8px' }}>
+                              {bid.status}
+                            </span>
+                          </p>
+                          {bid.status === "pending" && job.status === "open" ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              <Button style={{ width: "100%" }} size="small" onClick={() => acceptBid(bid._id)}>
+                                ✅ Accept
+                              </Button>
+                              <Button
+                                variant="outline"
+                                style={{ width: "100%" }}
+                                size="small"
+                                onClick={() => messageFreelancer(bid)}
+                              >
+                                💬 Message
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Delivery Time</label>
-                  <select
-                    value={proposal.deliveryTime}
-                    onChange={(e) => setProposal({ ...proposal, deliveryTime: e.target.value })}
-                    className="input-field"
-                  >
-                    <option>Less than 1 week</option>
-                    <option>1 week</option>
-                    <option>2 weeks</option>
-                    <option>1 month</option>
-                    <option>2+ months</option>
-                  </select>
-                </div>
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Cover Letter</label>
-                  <textarea
-                    value={proposal.coverLetter}
-                    onChange={(e) => setProposal({ ...proposal, coverLetter: e.target.value })}
-                    placeholder="Introduce yourself and explain why you're the best fit for this project..."
-                    className="input-field"
-                    rows="6"
-                    style={{ resize: "vertical" }}
-                    required
-                  />
-                </div>
-                <div style={{ display: "flex", gap: "12px" }}>
-                  <Button type="button" variant="outline" onClick={() => setShowProposalForm(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? "Submitting..." : "Submit Proposal"}
-                  </Button>
-                </div>
-              </form>
+              )}
             </div>
           )}
         </div>
 
         {/* Sidebar */}
-        <div>
-          <div className="card" style={{ marginBottom: "16px" }}>
-            <div style={{ marginBottom: "20px" }}>
-              <p style={{ fontSize: "12px", color: "var(--color-text-tertiary)", marginBottom: "4px" }}>Budget</p>
-              <p style={{ fontSize: "24px", fontWeight: "600" }}>${job.budget?.toLocaleString() || "N/A"}</p>
-            </div>
-            
-            {!showProposalForm && user?.role !== "client" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <Button onClick={() => setShowProposalForm(true)} style={{ width: "100%" }}>
-                  Apply Now
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Budget Card */}
+          <div className="card-static" style={{ background: 'var(--nb-yellow)' }}>
+            <label style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.5px', color: 'var(--nb-text-muted)' }}>
+              Budget
+            </label>
+            <h2 style={{ fontSize: 36, marginBottom: 14, fontFamily: 'var(--font-display)' }}>
+              {job.budgetType === "hourly" && (job.budgetMin || job.budgetMax)
+                ? `${formatCurrency(job.budgetMin || job.budget)} - ${formatCurrency(
+                    job.budgetMax || job.budget
+                  )}/hr`
+                : formatCurrency(job.budget)}
+            </h2>
+            <p style={{ color: "var(--nb-text-secondary)", marginBottom: 20, fontWeight: 600 }}>
+              📋 {job.bidsCount || 0} proposal{job.bidsCount === 1 ? "" : "s"} received
+            </p>
+
+            {!isOwner && user?.role !== "client" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <Button
+                  onClick={() => setShowProposalForm(true)}
+                  disabled={Boolean(myBid) || job.status !== "open"}
+                  style={{ width: "100%", background: 'var(--nb-black)', color: 'var(--nb-yellow)' }}
+                >
+                  {myBid ? `Proposal ${myBid.status}` : "Submit Proposal →"}
                 </Button>
                 <Button variant="outline" onClick={startChat} style={{ width: "100%" }}>
-                  Message Client
+                  💬 Message Client
                 </Button>
               </div>
-            )}
+            ) : null}
 
-            {user?.role === "client" && (
-              <p style={{ fontSize: "13px", color: "var(--color-text-tertiary)", textAlign: "center" }}>
-                This is your job posting
-              </p>
-            )}
+            {isOwner ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <Button
+                  variant="outline"
+                  disabled={updatingStatus || job.status === "completed"}
+                  onClick={() => updateStatus("completed")}
+                  style={{ width: "100%" }}
+                >
+                  ✅ Mark Completed
+                </Button>
+                <Button
+                  variant="danger"
+                  disabled={updatingStatus || job.status === "cancelled"}
+                  onClick={() => updateStatus("cancelled")}
+                  style={{ width: "100%" }}
+                >
+                  ✕ Cancel Project
+                </Button>
+              </div>
+            ) : null}
           </div>
 
-          {/* Client Info */}
-          <div className="card">
-            <h4 style={{ fontSize: "14px", marginBottom: "16px" }}>About the Client</h4>
-            <div style={{ fontSize: "13px", color: "var(--color-text-secondary)" }}>
-              <p style={{ marginBottom: "8px" }}>✓ Payment Verified</p>
-              <p style={{ marginBottom: "8px" }}>★ 4.8 rating</p>
-              <p style={{ marginBottom: "8px" }}>12 jobs posted</p>
-              <p>Member since 2024</p>
+          {/* Client Card */}
+          <div className="card-static">
+            <label style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.5px', color: 'var(--nb-text-muted)', marginBottom: 12, display: 'block' }}>
+              Client
+            </label>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "var(--nb-lime)",
+                  border: "var(--nb-border)",
+                  fontWeight: 800,
+                  fontSize: 18,
+                  boxShadow: 'var(--nb-shadow-sm)',
+                }}
+              >
+                {getUserInitials(job.client?.name)}
+              </div>
+              <div>
+                <h3 style={{ fontSize: 20, fontFamily: 'var(--font-heading)' }}>{job.client?.name}</h3>
+                <p style={{ color: "var(--nb-text-secondary)", fontSize: 14 }}>
+                  {job.client?.profile?.title || "Marketplace client"}
+                </p>
+              </div>
             </div>
+            <p style={{ color: "var(--nb-text-secondary)", marginBottom: 8, fontSize: 14 }}>
+              {job.client?.profile?.bio || "This client has not filled out a company bio yet."}
+            </p>
+            <p style={{ color: "var(--nb-text-muted)", fontSize: 13 }}>
+              ✉ {job.client?.email}
+            </p>
           </div>
         </div>
       </div>

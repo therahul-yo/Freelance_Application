@@ -7,7 +7,12 @@ import generateToken from "../utils/generateToken.js";
 const authUser = async (req, res) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
+  if (!email || !password) {
+    res.status(400);
+    throw new Error("Email and password are required");
+  }
+
+  const user = await User.findOne({ email: email.trim().toLowerCase() });
 
   if (user && (await user.matchPassword(password))) {
     generateToken(res, user._id);
@@ -29,7 +34,18 @@ const authUser = async (req, res) => {
 const registerUser = async (req, res) => {
   const { name, email, password, role } = req.body;
 
-  const userExists = await User.findOne({ email });
+  if (!name || !email || !password) {
+    res.status(400);
+    throw new Error("Name, email, and password are required");
+  }
+
+  if (!["client", "freelancer"].includes(role)) {
+    res.status(400);
+    throw new Error("Role must be either client or freelancer");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const userExists = await User.findOne({ email: normalizedEmail });
 
   if (userExists) {
     res.status(400);
@@ -37,8 +53,8 @@ const registerUser = async (req, res) => {
   }
 
   const user = await User.create({
-    name,
-    email,
+    name: name.trim(),
+    email: normalizedEmail,
     password,
     role,
   });
@@ -50,6 +66,7 @@ const registerUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      profile: user.profile,
     });
   } else {
     res.status(400);
@@ -80,12 +97,81 @@ const getUserProfile = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      profileValued: user.profileValued,
+      rating: user.rating,
+      numReviews: user.numReviews,
+      profile: user.profile,
     });
   } else {
     res.status(404);
     throw new Error("User not found");
   }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+const updateUserProfile = async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  const {
+    name,
+    role,
+    title,
+    tagline,
+    bio,
+    location,
+    hourlyRate,
+    skills,
+    portfolio,
+    avatar,
+  } = req.body;
+
+  user.name = name?.trim() || user.name;
+
+  if (role && ["client", "freelancer"].includes(role)) {
+    user.role = role;
+  }
+
+  user.profile = {
+    ...user.profile,
+    title: typeof title === "string" ? title.trim() : user.profile?.title || "",
+    tagline:
+      typeof tagline === "string" ? tagline.trim() : user.profile?.tagline || "",
+    bio: typeof bio === "string" ? bio.trim() : user.profile?.bio || "",
+    location:
+      typeof location === "string"
+        ? location.trim()
+        : user.profile?.location || "",
+    hourlyRate:
+      typeof hourlyRate === "number"
+        ? hourlyRate
+        : user.profile?.hourlyRate || 0,
+    skills: Array.isArray(skills)
+      ? skills.map((skill) => skill.trim()).filter(Boolean)
+      : user.profile?.skills || [],
+    portfolio: Array.isArray(portfolio)
+      ? portfolio.map((item) => item.trim()).filter(Boolean)
+      : user.profile?.portfolio || [],
+    avatar:
+      typeof avatar === "string" ? avatar.trim() : user.profile?.avatar || "",
+  };
+
+  const updatedUser = await user.save();
+
+  res.json({
+    _id: updatedUser._id,
+    name: updatedUser.name,
+    email: updatedUser.email,
+    role: updatedUser.role,
+    rating: updatedUser.rating,
+    numReviews: updatedUser.numReviews,
+    profile: updatedUser.profile,
+  });
 };
 
 // @desc    Get all users (search)
@@ -105,4 +191,11 @@ const allUsers = async (req, res) => {
   res.send(users);
 };
 
-export { authUser, registerUser, logoutUser, getUserProfile, allUsers };
+export {
+  authUser,
+  registerUser,
+  logoutUser,
+  getUserProfile,
+  updateUserProfile,
+  allUsers,
+};

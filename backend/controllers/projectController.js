@@ -1,13 +1,43 @@
 import Project from "../models/projectModel.js";
+import Bid from "../models/bidModel.js";
+import Notification from "../models/notificationModel.js";
+
+const populateProject = (query) =>
+  query
+    .populate("client", "name email rating numReviews profile")
+    .populate("assignedFreelancer", "name email rating numReviews profile");
 
 // @desc    Get all projects
 // @route   GET /api/projects
 // @access  Public
 const getProjects = async (req, res) => {
   try {
-    const projects = await Project.find({ status: "open" }).sort({
-      createdAt: -1,
-    });
+    const { category, search, status, clientId } = req.query;
+    const query = {};
+
+    if (status) {
+      query.status = status;
+    } else {
+      query.status = "open";
+    }
+
+    if (category && category !== "All" && category !== "All Categories") {
+      query.category = category;
+    }
+
+    if (clientId) {
+      query.client = clientId;
+    }
+
+    if (search?.trim()) {
+      query.$or = [
+        { title: { $regex: search.trim(), $options: "i" } },
+        { description: { $regex: search.trim(), $options: "i" } },
+        { skillsRequired: { $regex: search.trim(), $options: "i" } },
+      ];
+    }
+
+    const projects = await populateProject(Project.find(query).sort({ createdAt: -1 }));
     res.json(projects);
   } catch (error) {
     res.status(400);
@@ -20,10 +50,7 @@ const getProjects = async (req, res) => {
 // @access  Public
 const getProjectById = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id).populate(
-      "client",
-      "name email"
-    );
+    const project = await populateProject(Project.findById(req.params.id));
     if (project) {
       res.json(project);
     } else {
@@ -36,45 +63,181 @@ const getProjectById = async (req, res) => {
   }
 };
 
-// @desc    Create a project
-// @route   POST /api/projects
-// @access  Private (Clients only)
-const createProject = async (req, res) => {
-  const { 
-    title, 
-    description, 
-    category, 
-    budget, 
-    budgetType,
-    budgetMin,
-    budgetMax,
-    experienceLevel,
-    duration,
-    deadline, 
-    skillsRequired 
-  } = req.body;
-
+// @desc    Get current user's projects
+// @route   GET /api/projects/my
+// @access  Private
+const getMyProjects = async (req, res) => {
   try {
-    const project = await Project.create({
-      client: req.user._id,
-      title,
-      description,
-      category: category || "Web Development",
-      budget: budget || budgetMax || budgetMin,
-      budgetType: budgetType || "fixed",
-      budgetMin,
-      budgetMax,
-      experienceLevel: experienceLevel || "Intermediate",
-      duration: duration || "1 to 3 months",
-      deadline,
-      skillsRequired: skillsRequired || [],
-    });
-
-    res.status(201).json(project);
+    const query = {
+      $or: [{ client: req.user._id }, { assignedFreelancer: req.user._id }],
+    };
+    const projects = await populateProject(Project.find(query).sort({ createdAt: -1 }));
+    res.json(projects);
   } catch (error) {
     res.status(400);
     throw new Error(error.message);
   }
 };
 
-export { getProjects, getProjectById, createProject };
+// @desc    Create a project
+// @route   POST /api/projects
+// @access  Private (Clients only)
+const createProject = async (req, res) => {
+  const {
+    title,
+    description,
+    category,
+    budget,
+    budgetType,
+    budgetMin,
+    budgetMax,
+    experienceLevel,
+    duration,
+    deadline,
+    skillsRequired,
+  } = req.body;
+
+  try {
+    if (req.user.role !== "client") {
+      res.status(403);
+      throw new Error("Only clients can create projects");
+    }
+
+    if (!title?.trim() || !description?.trim()) {
+      res.status(400);
+      throw new Error("Title and description are required");
+    }
+
+    const normalizedBudget =
+      budgetType === "hourly"
+        ? Number(budgetMax || budgetMin || budget)
+        : Number(budget || budgetMax || budgetMin);
+
+    if (!normalizedBudget || normalizedBudget < 1) {
+      res.status(400);
+      throw new Error("A valid budget is required");
+    }
+
+    const project = await Project.create({
+      client: req.user._id,
+      title: title.trim(),
+      description: description.trim(),
+      category: category || "Web Development",
+      budget: normalizedBudget,
+      budgetType: budgetType || "fixed",
+      budgetMin,
+      budgetMax,
+      experienceLevel: experienceLevel || "Intermediate",
+      duration: duration || "1 to 3 months",
+      deadline,
+      skillsRequired: Array.isArray(skillsRequired)
+        ? skillsRequired.map((skill) => skill.trim()).filter(Boolean)
+        : [],
+    });
+
+    const populatedProject = await populateProject(Project.findById(project._id));
+    res.status(201).json(populatedProject);
+  } catch (error) {
+    res.status(400);
+    throw new Error(error.message);
+  }
+};
+
+// @desc    Update project status
+// @route   PUT /api/projects/:id/status
+// @access  Private
+const updateProjectStatus = async (req, res) => {
+  const { status } = req.body;
+
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      res.status(404);
+      throw new Error("Project not found");
+    }
+
+    const isClient = project.client.toString() === req.user._id.toString();
+    const isFreelancer = project.assignedFreelancer?.toString() === req.user._id.toString();
+
+    if (!isClient && !isFreelancer) {
+      res.status(403);
+      throw new Error("Not authorized to update this project status");
+    }
+
+    if (!["open", "in-progress", "delivered", "completed", "cancelled"].includes(status)) {
+      res.status(400);
+      throw new Error("Invalid project status");
+    }
+
+    // Role-based status transitions
+    if (isFreelancer) {
+      if (status !== "delivered") {
+        res.status(403);
+        throw new Error("Freelancers can only move projects to 'delivered' status");
+      }
+      if (project.status !== "in-progress") {
+        res.status(400);
+        throw new Error("Can only deliver projects that are in-progress");
+      }
+    }
+
+    if (isClient) {
+      if (status === "delivered" && !isFreelancer) {
+        res.status(403);
+        throw new Error("Only the assigned freelancer can deliver work");
+      }
+      // Client can move to completed only from delivered
+      if (status === "completed" && project.status !== "delivered") {
+        res.status(400);
+        throw new Error("Can only complete projects that have been delivered");
+      }
+    }
+
+    if (status === "open") {
+      project.assignedFreelancer = undefined;
+      await Bid.updateMany({ project: project._id }, { status: "pending" });
+    }
+
+    if ((status === "completed" || status === "in-progress" || status === "delivered") && !project.assignedFreelancer) {
+      res.status(400);
+      throw new Error("Assign a freelancer before moving the project forward");
+    }
+
+    project.status = status;
+    await project.save();
+
+    // Create notifications for status updates
+    if (status === "delivered") {
+      await Notification.create({
+        recipient: project.client,
+        sender: req.user._id,
+        type: "delivery",
+        content: `Work for "${project.title}" has been delivered by ${req.user.name}.`,
+        link: `/jobs/${project._id}`,
+      });
+    } else if (status === "completed") {
+      await Notification.create({
+        recipient: project.assignedFreelancer,
+        sender: req.user._id,
+        type: "completion",
+        content: `Project "${project.title}" has been approved and completed by the client.`,
+        link: `/jobs/${project._id}`,
+      });
+    }
+
+    const updatedProject = await populateProject(Project.findById(project._id));
+    res.json(updatedProject);
+  } catch (error) {
+    res.status(400);
+    throw new Error(error.message);
+  }
+};
+
+export {
+  getProjects,
+  getProjectById,
+  getMyProjects,
+  createProject,
+  updateProjectStatus,
+};

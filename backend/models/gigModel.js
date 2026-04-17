@@ -10,10 +10,12 @@ const gigSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
     },
     description: {
       type: String,
       required: true,
+      trim: true,
     },
     category: {
       type: String,
@@ -23,6 +25,7 @@ const gigSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: true,
+      min: 1,
     },
     deliveryTime: {
       type: String,

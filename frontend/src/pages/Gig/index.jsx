@@ -17,6 +17,8 @@ const CATEGORIES = [
   "Music & Audio",
 ];
 
+const avatarColors = ['var(--nb-pink)', 'var(--nb-blue)', 'var(--nb-yellow)', 'var(--nb-lime)', 'var(--nb-purple)', 'var(--nb-orange)'];
+
 const BrowseGigs = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -78,62 +80,47 @@ const BrowseGigs = () => {
   if (user?.role === "freelancer") return null;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div className="browse-layout">
       {/* Sidebar */}
-      <aside style={{ 
-        width: "260px", 
-        borderRight: "1px solid var(--color-border)", 
-        padding: "24px",
-        position: "sticky",
-        top: 0,
-        height: "100vh",
-        overflowY: "auto"
-      }}>
-        <h3 style={{ fontSize: "16px", marginBottom: "20px" }}>Find Talent</h3>
+      <aside className="browse-sidebar">
+        <h3 className="browse-sidebar-title">🏪 Find Talent</h3>
         
         {/* Category Filter */}
         <div>
-          <h4 style={{ fontSize: "13px", marginBottom: "12px", color: "var(--color-text-secondary)" }}>Category</h4>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: 14, 
+            fontFamily: 'var(--font-heading)',
+            fontWeight: 700,
+            fontSize: 12,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            color: 'var(--nb-text-muted)',
+          }}>
+            Category
+          </label>
           {CATEGORIES.map(cat => (
-            <label 
+            <div 
               key={cat} 
-              style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                gap: "8px", 
-                marginBottom: "8px",
-                cursor: "pointer",
-                fontSize: "13px",
-                color: selectedCategory === cat ? "var(--color-text-primary)" : "var(--color-text-secondary)"
-              }}
+              className={`category-option ${selectedCategory === cat ? 'active' : ''}`}
               onClick={() => setSelectedCategory(cat)}
             >
-              <span style={{ 
-                width: "16px", 
-                height: "16px", 
-                border: "1px solid var(--color-border)", 
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}>
-                {selectedCategory === cat && (
-                  <span style={{ width: "8px", height: "8px", background: "white", borderRadius: "50%" }} />
-                )}
-              </span>
+              <div className="category-radio">
+                {selectedCategory === cat && <div className="category-radio-dot" />}
+              </div>
               {cat}
-            </label>
+            </div>
           ))}
         </div>
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, padding: "24px 32px" }}>
+      <main className="browse-main">
         {/* Search */}
-        <div style={{ marginBottom: "24px" }}>
+        <div className="browse-search">
           <input
             type="text"
-            placeholder="Search for services..."
+            placeholder="🔍 Search for services..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-field"
@@ -142,73 +129,70 @@ const BrowseGigs = () => {
         </div>
 
         {/* Results */}
-        <p style={{ fontSize: "13px", color: "var(--color-text-secondary)", marginBottom: "20px" }}>
-          {loading ? "Loading..." : `${filteredGigs.length} freelancers available`}
+        <p style={{ fontSize: 13, color: "var(--nb-text-muted)", marginBottom: 20, fontWeight: 600 }}>
+          {loading ? (
+            <span className="neo-loading">Loading...</span>
+          ) : `${filteredGigs.length} freelancers available`}
         </p>
 
         {/* No Gigs */}
         {!loading && filteredGigs.length === 0 && (
-          <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
-            <h3 style={{ marginBottom: "8px" }}>No freelancers found</h3>
-            <p style={{ color: "var(--color-text-secondary)" }}>
+          <div className="card-static" style={{ textAlign: "center", padding: "60px 20px", background: 'var(--nb-cream)' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+            <h3 style={{ marginBottom: 8, fontFamily: 'var(--font-heading)' }}>No freelancers found</h3>
+            <p style={{ color: "var(--nb-text-secondary)" }}>
               Check back later for new talent
             </p>
           </div>
         )}
 
         {/* Gig Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
-          {filteredGigs.map(gig => (
-            <div key={gig._id} className="card" style={{ display: "flex", flexDirection: "column" }}>
-              {/* Gig Content */}
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                  <div style={{ 
-                    width: "32px", 
-                    height: "32px", 
-                    borderRadius: "50%", 
-                    background: "var(--color-bg-tertiary)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "14px"
-                  }}>
-                    {gig.freelancer?.name?.charAt(0) || "?"}
-                  </div>
-                  <div>
-                    <p style={{ fontSize: "13px", fontWeight: "500" }}>{gig.freelancer?.name}</p>
-                  </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
+          {filteredGigs.map((gig, idx) => (
+            <div key={gig._id} className="gig-card">
+              {/* Header */}
+              <div className="gig-card-header">
+                <div className="gig-card-avatar" style={{ background: avatarColors[idx % avatarColors.length] }}>
+                  {gig.freelancer?.name?.charAt(0) || "?"}
                 </div>
-                
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-heading)' }}>{gig.freelancer?.name}</p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="gig-card-body">
                 <Link to={`/gigs/${gig._id}`}>
-                  <h4 style={{ fontSize: "15px", marginBottom: "8px", lineHeight: "1.4" }}>
+                  <h4 style={{ fontSize: 16, marginBottom: 10, lineHeight: 1.4, fontFamily: 'var(--font-heading)', fontWeight: 700 }}>
                     {gig.title}
                   </h4>
                 </Link>
                 
-                <p style={{ fontSize: "13px", color: "var(--color-text-secondary)", marginBottom: "12px", lineHeight: "1.5" }}>
+                <p style={{ fontSize: 13, color: "var(--nb-text-secondary)", marginBottom: 14, lineHeight: 1.5 }}>
                   {gig.description.length > 100 ? gig.description.substring(0, 100) + "..." : gig.description}
                 </p>
 
                 {/* Skills */}
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "16px" }}>
-                  {gig.skills?.slice(0, 3).map(skill => (
-                    <span key={skill} className="badge" style={{ fontSize: "11px", padding: "3px 8px" }}>{skill}</span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {gig.skills?.slice(0, 3).map((skill, i) => (
+                    <span key={skill} className={`badge ${['badge-blue', 'badge-lime', 'badge-purple'][i % 3]}`} style={{ fontSize: 11, padding: '3px 8px' }}>
+                      {skill}
+                    </span>
                   ))}
                 </div>
               </div>
 
               {/* Footer */}
-              <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div className="gig-card-footer">
                 <div>
-                  <p style={{ fontSize: "11px", color: "var(--color-text-tertiary)" }}>Starting at</p>
-                  <p style={{ fontSize: "18px", fontWeight: "600" }}>${gig.price}</p>
+                  <p style={{ fontSize: 11, color: "var(--nb-text-muted)", fontWeight: 600, textTransform: 'uppercase' }}>Starting at</p>
+                  <p className="gig-card-price">${gig.price}</p>
                 </div>
                 <Button 
-                  style={{ fontSize: "12px", padding: "6px 12px" }}
+                  size="small"
                   onClick={() => startChat(gig.freelancer?._id)}
                 >
-                  Hire Me
+                  Hire Me →
                 </Button>
               </div>
             </div>

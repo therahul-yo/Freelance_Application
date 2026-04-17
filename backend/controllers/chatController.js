@@ -15,26 +15,38 @@ import Chat from "../models/chatModel.js"; // We might need a Chat/Conversation 
 // @route   POST /api/chat
 // @access  Private
 const accessChat = async (req, res) => {
-  const { userId } = req.body;
+  const { userId, contextId, contextType, contextTitle, contextBidId } = req.body;
 
   if (!userId) {
-    console.log("UserId param not sent with request");
-    return res.sendStatus(400);
+    res.status(400);
+    throw new Error("A userId is required to start a conversation");
   }
 
-  var isChat = await Chat.find({
+  if (userId === req.user._id.toString()) {
+    res.status(400);
+    throw new Error("You cannot start a conversation with yourself");
+  }
+
+  // Find if a chat already exists between these two users with this context
+  const query = {
     isGroupChat: false,
     $and: [
       { users: { $elemMatch: { $eq: req.user._id } } },
       { users: { $elemMatch: { $eq: userId } } },
     ],
-  })
+  };
+
+  if (contextId) {
+    query.contextId = contextId;
+  }
+
+  var isChat = await Chat.find(query)
     .populate("users", "-password")
     .populate("latestMessage");
 
   isChat = await User.populate(isChat, {
     path: "latestMessage.sender",
-    select: "name pic email",
+    select: "name email profile",
   });
 
   if (isChat.length > 0) {
@@ -44,6 +56,10 @@ const accessChat = async (req, res) => {
       chatName: "sender",
       isGroupChat: false,
       users: [req.user._id, userId],
+      contextId,
+      contextType,
+      contextTitle,
+      contextBidId,
     };
 
     try {
@@ -73,7 +89,7 @@ const fetchChats = async (req, res) => {
       .then(async (results) => {
         results = await User.populate(results, {
           path: "latestMessage.sender",
-          select: "name pic email",
+          select: "name email profile",
         });
         res.status(200).send(results);
       });

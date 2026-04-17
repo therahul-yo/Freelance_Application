@@ -11,6 +11,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      trim: true,
+      lowercase: true,
     },
     password: {
       type: String,
@@ -21,12 +23,15 @@ const userSchema = new mongoose.Schema(
       enum: ["client", "freelancer", "admin"],
       default: "client",
     },
-    profileValued: {
-      // Basic profile details
-      bio: { type: String },
+    profile: {
+      title: { type: String, default: "" },
+      tagline: { type: String, default: "" },
+      bio: { type: String, default: "" },
+      location: { type: String, default: "" },
+      hourlyRate: { type: Number, default: 0 },
       skills: [{ type: String }],
-      portfolio: [{ type: String }], // URLs to portfolio items
-      avatar: { type: String },
+      portfolio: [{ type: String }],
+      avatar: { type: String, default: "" },
     },
     rating: {
       type: Number,
@@ -48,9 +53,9 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 // Encrypt password using bcrypt
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
   if (!this.isModified("password")) {
-    next();
+    return;
   }
 
   const salt = await bcrypt.genSalt(10);

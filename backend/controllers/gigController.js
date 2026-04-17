@@ -1,4 +1,9 @@
 import Gig from "../models/gigModel.js";
+import Project from "../models/projectModel.js";
+import Notification from "../models/notificationModel.js";
+
+const populateGig = (query) =>
+  query.populate("freelancer", "name email rating numReviews profile");
 
 // @desc    Get all active gigs
 // @route   GET /api/gigs
@@ -15,13 +20,12 @@ const getGigs = async (req, res) => {
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } }
+        { description: { $regex: search, $options: "i" } },
+        { skills: { $regex: search, $options: "i" } },
       ];
     }
 
-    const gigs = await Gig.find(query)
-      .populate("freelancer", "name email")
-      .sort({ createdAt: -1 });
+    const gigs = await populateGig(Gig.find(query).sort({ createdAt: -1 }));
     res.json(gigs);
   } catch (error) {
     res.status(400);
@@ -34,12 +38,20 @@ const getGigs = async (req, res) => {
 // @access  Public
 const getGigById = async (req, res) => {
   try {
-    const gig = await Gig.findById(req.params.id).populate(
-      "freelancer",
-      "name email"
-    );
+    const gig = await populateGig(Gig.findById(req.params.id));
     if (gig) {
-      res.json(gig);
+      let activeOrder = null;
+      if (req.user) {
+        const project = await Project.findOne({
+          client: req.user._id,
+          sourceGig: req.params.id,
+          status: { $in: ["in-progress", "delivered"] },
+        });
+        if (project) {
+          activeOrder = project._id;
+        }
+      }
+      res.json({ ...gig.toObject(), activeOrder });
     } else {
       res.status(404);
       throw new Error("Gig not found");
@@ -57,17 +69,30 @@ const createGig = async (req, res) => {
   const { title, description, category, price, deliveryTime, skills } = req.body;
 
   try {
+    if (req.user.role !== "freelancer") {
+      res.status(403);
+      throw new Error("Only freelancers can create gigs");
+    }
+
+    if (!title?.trim() || !description?.trim() || !price) {
+      res.status(400);
+      throw new Error("Title, description, and price are required");
+    }
+
     const gig = await Gig.create({
       freelancer: req.user._id,
-      title,
-      description,
+      title: title.trim(),
+      description: description.trim(),
       category: category || "Web Development",
-      price,
+      price: Number(price),
       deliveryTime: deliveryTime || "3 days",
-      skills: skills || [],
+      skills: Array.isArray(skills)
+        ? skills.map((skill) => skill.trim()).filter(Boolean)
+        : [],
     });
 
-    res.status(201).json(gig);
+    const populatedGig = await populateGig(Gig.findById(gig._id));
+    res.status(201).json(populatedGig);
   } catch (error) {
     res.status(400);
     throw new Error(error.message);
@@ -79,7 +104,9 @@ const createGig = async (req, res) => {
 // @access  Private
 const getMyGigs = async (req, res) => {
   try {
-    const gigs = await Gig.find({ freelancer: req.user._id }).sort({ createdAt: -1 });
+    const gigs = await populateGig(
+      Gig.find({ freelancer: req.user._id }).sort({ createdAt: -1 })
+    );
     res.json(gigs);
   } catch (error) {
     res.status(400);
@@ -104,7 +131,18 @@ const updateGig = async (req, res) => {
       throw new Error("Not authorized");
     }
 
-    const updatedGig = await Gig.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const nextPayload = { ...req.body };
+    if (typeof nextPayload.title === "string") nextPayload.title = nextPayload.title.trim();
+    if (typeof nextPayload.description === "string") {
+      nextPayload.description = nextPayload.description.trim();
+    }
+    if (Array.isArray(nextPayload.skills)) {
+      nextPayload.skills = nextPayload.skills.map((skill) => skill.trim()).filter(Boolean);
+    }
+
+    const updatedGig = await populateGig(
+      Gig.findByIdAndUpdate(req.params.id, nextPayload, { new: true })
+    );
     res.json(updatedGig);
   } catch (error) {
     res.status(400);
@@ -137,4 +175,63 @@ const deleteGig = async (req, res) => {
   }
 };
 
-export { getGigs, getGigById, createGig, getMyGigs, updateGig, deleteGig };
+// @desc    Purchase a gig
+// @route   POST /api/gigs/:id/purchase
+// @access  Private
+const purchaseGig = async (req, res) => {
+  try {
+    const gig = await populateGig(Gig.findById(req.params.id));
+
+    if (!gig) {
+      res.status(404);
+      throw new Error("Gig not found");
+    }
+
+    if (gig.freelancer._id.toString() === req.user._id.toString()) {
+      res.status(400);
+      throw new Error("You cannot purchase your own gig");
+    }
+
+    // Check for existing active order
+    const existingProject = await Project.findOne({
+      client: req.user._id,
+      sourceGig: req.params.id,
+      status: { $in: ["in-progress", "delivered"] },
+    });
+
+    if (existingProject) {
+      res.status(400);
+      throw new Error("You already have an active order for this gig");
+    }
+
+    // Create a new project based on the gig
+    const project = await Project.create({
+      client: req.user._id,
+      title: gig.title,
+      description: gig.description,
+      category: gig.category,
+      budget: gig.price,
+      budgetType: "fixed",
+      status: "in-progress",
+      assignedFreelancer: gig.freelancer._id,
+      skillsRequired: gig.skills,
+      sourceGig: gig._id,
+    });
+
+    // Create notification for freelancer
+    await Notification.create({
+      recipient: gig.freelancer._id,
+      sender: req.user._id,
+      type: "acceptance",
+      content: `${req.user.name} purchased your gig: ${gig.title}`,
+      link: `/jobs/${project._id}`,
+    });
+
+    res.status(201).json(project);
+  } catch (error) {
+    res.status(400);
+    throw new Error(error.message);
+  }
+};
+
+export { getGigs, getGigById, createGig, getMyGigs, updateGig, deleteGig, purchaseGig };

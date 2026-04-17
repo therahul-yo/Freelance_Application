@@ -71,62 +71,47 @@ const Projects = () => {
   if (user?.role === "client") return null;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div className="browse-layout">
       {/* Sidebar Filters */}
-      <aside style={{ 
-        width: "260px", 
-        borderRight: "1px solid var(--color-border)", 
-        padding: "24px",
-        position: "sticky",
-        top: 0,
-        height: "100vh",
-        overflowY: "auto"
-      }}>
-        <h3 style={{ fontSize: "16px", marginBottom: "20px" }}>Find Jobs</h3>
+      <aside className="browse-sidebar">
+        <h3 className="browse-sidebar-title">🎯 Find Jobs</h3>
         
         {/* Category Filter */}
-        <div style={{ marginBottom: "24px" }}>
-          <h4 style={{ fontSize: "13px", marginBottom: "12px", color: "var(--color-text-secondary)" }}>Category</h4>
+        <div>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: 14, 
+            fontFamily: 'var(--font-heading)',
+            fontWeight: 700,
+            fontSize: 12,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            color: 'var(--nb-text-muted)',
+          }}>
+            Category
+          </label>
           {CATEGORIES.map(cat => (
-            <label 
+            <div 
               key={cat} 
-              style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                gap: "8px", 
-                marginBottom: "8px",
-                cursor: "pointer",
-                fontSize: "13px",
-                color: selectedCategory === cat ? "var(--color-text-primary)" : "var(--color-text-secondary)"
-              }}
+              className={`category-option ${selectedCategory === cat ? 'active' : ''}`}
               onClick={() => setSelectedCategory(cat)}
             >
-              <span style={{ 
-                width: "16px", 
-                height: "16px", 
-                border: "1px solid var(--color-border)", 
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}>
-                {selectedCategory === cat && (
-                  <span style={{ width: "8px", height: "8px", background: "white", borderRadius: "50%" }} />
-                )}
-              </span>
+              <div className="category-radio">
+                {selectedCategory === cat && <div className="category-radio-dot" />}
+              </div>
               {cat}
-            </label>
+            </div>
           ))}
         </div>
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, padding: "24px 32px" }}>
+      <main className="browse-main">
         {/* Search Bar */}
-        <div style={{ marginBottom: "24px" }}>
+        <div className="browse-search">
           <input
             type="text"
-            placeholder="Search for jobs..."
+            placeholder="🔍 Search for jobs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-field"
@@ -135,51 +120,34 @@ const Projects = () => {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: "24px", marginBottom: "24px", borderBottom: "1px solid var(--color-border)", paddingBottom: "12px" }}>
+        <div className="neo-tabs" style={{ marginBottom: 24, display: 'inline-flex' }}>
           <button 
+            className={`neo-tab ${activeTab === "best" ? 'active' : ''}`}
             onClick={() => setActiveTab("best")}
-            style={{ 
-              background: "none", 
-              border: "none", 
-              fontSize: "14px",
-              color: activeTab === "best" ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
-              fontWeight: activeTab === "best" ? "600" : "400",
-              cursor: "pointer",
-              paddingBottom: "8px",
-              borderBottom: activeTab === "best" ? "2px solid white" : "2px solid transparent",
-              marginBottom: "-13px"
-            }}
           >
-            Best Matches
+            ★ Best Matches
           </button>
           <button 
+            className={`neo-tab ${activeTab === "recent" ? 'active' : ''}`}
             onClick={() => setActiveTab("recent")}
-            style={{ 
-              background: "none", 
-              border: "none", 
-              fontSize: "14px",
-              color: activeTab === "recent" ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
-              fontWeight: activeTab === "recent" ? "600" : "400",
-              cursor: "pointer",
-              paddingBottom: "8px",
-              borderBottom: activeTab === "recent" ? "2px solid white" : "2px solid transparent",
-              marginBottom: "-13px"
-            }}
           >
-            Most Recent
+            🕐 Most Recent
           </button>
         </div>
 
         {/* Results Count */}
-        <p style={{ fontSize: "13px", color: "var(--color-text-secondary)", marginBottom: "20px" }}>
-          {loading ? "Loading..." : `${filteredJobs.length} jobs available`}
+        <p style={{ fontSize: 13, color: "var(--nb-text-muted)", marginBottom: 20, fontWeight: 600 }}>
+          {loading ? (
+            <span className="neo-loading">Loading...</span>
+          ) : `${filteredJobs.length} jobs available`}
         </p>
 
         {/* No Jobs Message */}
         {!loading && filteredJobs.length === 0 && (
-          <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
-            <h3 style={{ marginBottom: "8px" }}>No jobs found</h3>
-            <p style={{ color: "var(--color-text-secondary)" }}>
+          <div className="card-static" style={{ textAlign: "center", padding: "60px 20px", background: 'var(--nb-cream)' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+            <h3 style={{ marginBottom: 8, fontFamily: 'var(--font-heading)' }}>No jobs found</h3>
+            <p style={{ color: "var(--nb-text-secondary)" }}>
               Check back later for new opportunities
             </p>
           </div>
@@ -187,29 +155,21 @@ const Projects = () => {
 
         {/* Job Listings */}
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {filteredJobs.map((job, index) => (
-            <div
-              key={job._id}
-              style={{ 
-                padding: "24px 0", 
-                borderBottom: index !== filteredJobs.length - 1 ? "1px solid var(--color-border)" : "none"
-              }}
-            >
+          {filteredJobs.map((job) => (
+            <div key={job._id} className="job-listing">
               {/* Posted Time */}
-              <p style={{ fontSize: "12px", color: "var(--color-text-tertiary)", marginBottom: "8px" }}>
+              <p className="job-listing-time">
                 Posted {formatDate(job.createdAt)}
               </p>
 
               {/* Title */}
-              <Link to={`/jobs/${job._id}`} style={{ textDecoration: "none" }}>
-                <h3 style={{ fontSize: "18px", marginBottom: "12px", cursor: "pointer" }}>
-                  {job.title}
-                </h3>
+              <Link to={`/jobs/${job._id}`}>
+                <h3 className="job-listing-title">{job.title}</h3>
               </Link>
 
               {/* Job Meta */}
-              <div style={{ display: "flex", gap: "16px", marginBottom: "12px", fontSize: "13px", color: "var(--color-text-secondary)" }}>
-                <span>
+              <div className="job-listing-meta">
+                <span style={{ fontWeight: 700 }}>
                   {job.budgetType === "hourly" 
                     ? `$${job.budgetMin || job.budget} - $${job.budgetMax || job.budget}/hr`
                     : `Fixed: $${job.budget?.toLocaleString()}`
@@ -222,29 +182,27 @@ const Projects = () => {
               </div>
 
               {/* Description */}
-              <p style={{ fontSize: "14px", color: "var(--color-text-secondary)", lineHeight: "1.6", marginBottom: "12px" }}>
+              <p style={{ fontSize: 14, color: "var(--nb-text-secondary)", lineHeight: "1.6", marginBottom: 14 }}>
                 {job.description.length > 250 ? job.description.substring(0, 250) + "..." : job.description}
               </p>
 
               {/* Skills */}
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
-                {job.skillsRequired?.map(skill => (
-                  <span key={skill} className="badge">{skill}</span>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+                {job.skillsRequired?.map((skill, i) => (
+                  <span key={skill} className={`badge ${['badge-blue', 'badge-purple', 'badge-lime', 'badge-orange', 'badge-pink'][i % 5]}`} style={{ fontSize: 11, padding: '4px 10px' }}>
+                    {skill}
+                  </span>
                 ))}
               </div>
 
               {/* Actions */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "12px", color: "var(--color-text-tertiary)" }}>
-                  <span>Proposals: {job.bidsCount || 0}</span>
+              <div className="job-listing-actions">
+                <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 12, color: "var(--nb-text-muted)", fontWeight: 600 }}>
+                  <span>📋 Proposals: {job.bidsCount || 0}</span>
                 </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <Link to={`/jobs/${job._id}`}>
-                    <Button style={{ fontSize: "12px", padding: "6px 12px" }}>
-                      Apply Now
-                    </Button>
-                  </Link>
-                </div>
+                <Link to={`/jobs/${job._id}`}>
+                  <Button size="small">Apply Now →</Button>
+                </Link>
               </div>
             </div>
           ))}

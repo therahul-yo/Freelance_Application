@@ -1,10 +1,9 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect, useContext } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
+import api from "../lib/api";
 
 const AuthContext = createContext();
-
-axios.defaults.withCredentials = true;
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -16,9 +15,9 @@ export const AuthProvider = ({ children }) => {
     // Check if user is logged in
     const checkUser = async () => {
       try {
-        const { data } = await axios.get("http://localhost:5001/api/users/profile");
+        const { data } = await api.get("/users/profile");
         setUser(data);
-      } catch (error) {
+      } catch {
         setUser(null);
       } finally {
         setLoading(false);
@@ -30,7 +29,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const { data } = await axios.post("http://localhost:5001/api/users/auth", {
+      const { data } = await api.post("/users/auth", {
         email,
         password,
       });
@@ -45,7 +44,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password, role) => {
     try {
-      const { data } = await axios.post("http://localhost:5001/api/users", {
+      const { data } = await api.post("/users", {
         name,
         email,
         password,
@@ -62,10 +61,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post("http://localhost:5001/api/users/logout");
+      await api.post("/users/logout");
       setUser(null);
       toast.success("Logged out");
-    } catch (error) {
+    } catch {
       toast.error("Logout failed");
     }
   };
