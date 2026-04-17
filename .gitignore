@@ -37,3 +37,8 @@ Thumbs.db
 # Legacy folders (not part of main app)
 socket/
 legacy/
+docs/
+skills/
+mempalace.yaml
+entities.json
+verify_task*.js
