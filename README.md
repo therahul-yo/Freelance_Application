@@ -26,7 +26,8 @@ A full-stack freelance marketplace connecting clients with skilled professionals
 ### Technical Features
 - 🔐 JWT cookie-based authentication
 - 💬 Real-time messaging with Socket.IO
-- 🎨 Minimal dark-mode UI
+- 🔔 Real-time notifications system
+- 🎨 Ambitious Neo-Brutalism UI Design
 - 📱 Responsive design
 - 🔄 RESTful API architecture
 
@@ -49,8 +50,8 @@ A full-stack freelance marketplace connecting clients with skilled professionals
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/smith-works.git
-cd smith-works
+git clone https://github.com/therahul-yo/Freelance_Application.git
+cd Freelance_Application
 ```
 
 2. **Setup Backend**
@@ -142,9 +143,17 @@ smith-works/
 - `POST /api/message` - Send message
 - `GET /api/message/:chatId` - Get messages
 
-## Screenshots
+### Notifications
+- `GET /api/notifications` - Get all user notifications
+- `PUT /api/notifications/:id/read` - Mark notification as read
+- `PUT /api/notifications/read-all` - Mark all notifications as read
 
-*Coming soon*
+### Reviews & Ratings
+- `POST /api/reviews` - Submit a review for a user
+- `GET /api/reviews/user/:userId` - Get reviews for a specific user
+
+## Screenshots
+*Screenshots of the Neo-Brutalism UI overhaul coming soon.*
 
 ## License
 
