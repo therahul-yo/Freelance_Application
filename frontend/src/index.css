@@ -91,6 +91,7 @@ button {
 
 /* Card */
 .card {
+  position: relative;
   border: 2px solid var(--color-border);
   background: var(--color-bg-secondary);
   box-shadow: 4px 4px 0px 0px #000000;
