@@ -1,15 +1,9 @@
 import React from 'react';
 
-const Button = ({ children, variant = 'primary', className = '', style = {}, ...props }) => {
-  const baseClass = 'btn';
-  const variantClass = variant === 'outline' ? 'btn-outline' : 'btn-primary';
-  
+const Button = ({ children, variant = 'primary', ...props }) => {
+  const className = `btn-industrial ${variant === 'primary' ? 'btn-primary-industrial' : ''}`;
   return (
-    <button
-      className={`${baseClass} ${variantClass} ${className}`}
-      style={style}
-      {...props}
-    >
+    <button className={className} {...props}>
       {children}
     </button>
   );

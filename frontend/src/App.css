@@ -40,3 +40,31 @@
 .read-the-docs {
   color: #888;
 }
+
+.btn-industrial {
+  position: relative;
+  background: var(--color-accent-secondary);
+  color: white;
+  border: 2px solid #000;
+  box-shadow: 4px 4px 0px 0px #000;
+  transition: all 0.05s ease;
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.btn-industrial:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px 0px #000;
+}
+
+.btn-primary-industrial {
+  background: var(--color-accent-primary);
+  color: black;
+}
