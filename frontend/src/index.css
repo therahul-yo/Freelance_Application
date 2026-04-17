@@ -1,56 +1,34 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
 
 :root {
-  /* Pitch Black & White Theme */
-  --color-bg-primary: #000000;
-  --color-bg-secondary: #0a0a0a;
-  --color-bg-tertiary: #141414;
-  
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #a0a0a0;
-  --color-text-tertiary: #666666;
-
-  /* Minimal Accent - White only */
-  --color-accent-primary: #ffffff;
-  --color-accent-secondary: #e0e0e0;
-  
-  /* Status */
-  --color-success: #22c55e;
-  --color-warning: #eab308;
-  --color-error: #ef4444;
-
-  /* Borders */
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-border-hover: rgba(255, 255, 255, 0.2);
-  
-  /* Spacing */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-
-  /* Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-full: 9999px;
-  
-  /* Transitions */
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
+  --color-bg-primary: #0B0D0F;
+  --color-bg-secondary: #16191D;
+  --color-grid: #1A1E23;
+  --color-accent-primary: #FF6B00; /* Safety Orange */
+  --color-accent-secondary: #1E2A3B; /* Blueprint Blue */
+  --color-text-primary: #F0F0F0;
+  --color-text-secondary: #808A9D;
+  --color-border: #1E2A3B;
+  --color-border-active: #FF6B00;
+  --radius-none: 0px;
+  --spacing-grid: 32px;
+  color-scheme: dark;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  border-radius: var(--radius-none) !important;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--color-bg-primary);
+  background-image: 
+    linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+  background-size: var(--spacing-grid) var(--spacing-grid);
+  font-family: 'Inter', sans-serif;
   color: var(--color-text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -58,7 +36,8 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-weight: 700;
   color: var(--color-text-primary);
   line-height: 1.3;
 }
@@ -66,7 +45,7 @@ h1, h2, h3, h4, h5, h6 {
 a {
   text-decoration: none;
   color: inherit;
-  transition: var(--transition-fast);
+  transition: 0.2s ease;
 }
 
 a:hover {
@@ -94,32 +73,33 @@ button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-full);
+  background: var(--color-border);
+  border-radius: var(--radius-none);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
+  background: var(--color-text-secondary);
 }
+
 
 /* Container */
 .container {
-  max-width: 1200px;
+  width: min(1200px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 0 var(--spacing-lg);
+  padding: 0;
 }
 
 /* Card */
 .card {
+  border: 2px solid var(--color-border);
   background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
-  transition: var(--transition-fast);
+  box-shadow: 4px 4px 0px 0px #000000;
+  transition: border-color 0.2s ease;
+  padding: 24px; /* Default padding if needed, original was var(--spacing-lg) which is now missing */
 }
 
 .card:hover {
-  border-color: var(--color-border-hover);
+  border-color: var(--color-border-active);
 }
 
 /* Buttons */
@@ -127,29 +107,32 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   padding: 10px 20px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 14px;
-  transition: var(--transition-fast);
+  transition: 0.2s ease;
 }
 
 .btn-primary {
-  background: var(--color-text-primary);
-  color: var(--color-bg-primary);
+  background: var(--color-accent-primary);
+  color: #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px #000000;
 }
 
 .btn-outline {
   border: 1px solid var(--color-border);
   color: var(--color-text-primary);
+  background: transparent;
 }
 
 .btn-outline:hover {
-  border-color: var(--color-text-primary);
+  border-color: var(--color-border-active);
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -159,29 +142,28 @@ button {
   padding: 12px 16px;
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
   color: var(--color-text-primary);
   font-size: 14px;
-  transition: var(--transition-fast);
+  transition: 0.2s ease;
 }
 
 .input-field:focus {
   outline: none;
-  border-color: var(--color-text-primary);
+  border-color: var(--color-border-active);
 }
 
 .input-field::placeholder {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
 }
 
 /* Badge */
 .badge {
   display: inline-block;
   padding: 4px 10px;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-full);
+  background: var(--color-accent-secondary);
+  border: 1px solid var(--color-border);
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
 }
 
 /* React Toastify Overrides */
@@ -189,4 +171,42 @@ button {
   background: var(--color-bg-secondary) !important;
   color: var(--color-text-primary) !important;
   border: 1px solid var(--color-border);
+}
+
+.page-section {
+  padding: 32px 0 72px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.two-column-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+}
+
+.three-column-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 980px) {
+  .stats-grid,
+  .three-column-grid,
+  .two-column-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
 }
