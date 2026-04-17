@@ -60,6 +60,10 @@ const projectSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    sourceGig: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Gig",
+    },
     bidsCount: {
       type: Number,
       default: 0

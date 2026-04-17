@@ -1,5 +1,5 @@
 import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect, optionalProtect } from "../middleware/authMiddleware.js";
 import { 
   getGigs, 
   getGigById, 
@@ -15,6 +15,6 @@ const router = express.Router();
 router.route("/").get(getGigs).post(protect, createGig);
 router.route("/my").get(protect, getMyGigs);
 router.route("/:id/purchase").post(protect, purchaseGig);
-router.route("/:id").get(getGigById).put(protect, updateGig).delete(protect, deleteGig);
+router.route("/:id").get(optionalProtect, getGigById).put(protect, updateGig).delete(protect, deleteGig);
 
 export default router;

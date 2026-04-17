@@ -1,12 +1,13 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import io from "socket.io-client";
+import { SOCKET_URL } from "../lib/api";
 
 const ChatContext = createContext();
 
 export const useChat = () => useContext(ChatContext);
 
-const ENDPOINT = "http://localhost:5001";
 var socket;
 
 export const ChatProvider = ({ children }) => {
@@ -17,7 +18,7 @@ export const ChatProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      socket = io(ENDPOINT);
+      socket = io(SOCKET_URL, { withCredentials: true });
       socket.emit("setup", user);
       socket.on("connected", () => console.log("Socket Connected"));
     }

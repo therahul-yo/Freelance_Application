@@ -26,31 +26,46 @@ const ReviewModal = ({ project, onClose, onSuccess }) => {
   };
 
   return (
-    <div className="modal-overlay" style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.8)', display: 'grid', placeItems: 'center', zIndex: 100
-    }}>
-      <div className="card" style={{ width: '100%', maxWidth: 400 }}>
-        <h2 style={{ marginBottom: 16 }}>Leave a Review</h2>
-        <p style={{ marginBottom: 20, color: 'var(--color-text-secondary)' }}>
+    <div className="modal-overlay">
+      <div className="card-static" style={{ width: '100%', maxWidth: 440 }}>
+        <span className="badge badge-orange" style={{ marginBottom: 16 }}>⭐ Review</span>
+        <h2 style={{ marginBottom: 12, fontFamily: 'var(--font-display)', textTransform: 'uppercase', fontSize: 24 }}>
+          Leave a Review
+        </h2>
+        <p style={{ marginBottom: 24, color: 'var(--nb-text-secondary)' }}>
           Rate your experience with this project.
         </p>
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 8 }}>Rating (1-5)</label>
-            <select
-              className="input-field"
-              value={rating}
-              onChange={(e) => setRating(e.target.value)}
-              required
-            >
-              {[5, 4, 3, 2, 1].map((n) => (
-                <option key={n} value={n}>{n} Stars</option>
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+              Rating (1-5)
+            </label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setRating(n)}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    border: 'var(--nb-border)',
+                    background: rating >= n ? 'var(--nb-yellow)' : 'var(--nb-white)',
+                    fontSize: 20,
+                    cursor: 'pointer',
+                    boxShadow: rating >= n ? 'var(--nb-shadow-sm)' : 'none',
+                    transition: 'all 0.1s ease',
+                  }}
+                >
+                  ★
+                </button>
               ))}
-            </select>
+            </div>
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8 }}>Comment</label>
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+              Comment
+            </label>
             <textarea
               className="input-field"
               rows="4"
@@ -62,7 +77,7 @@ const ReviewModal = ({ project, onClose, onSuccess }) => {
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Sending..." : "Submit Review"}
+              {submitting ? "Sending..." : "Submit Review ★"}
             </Button>
             <Button variant="outline" type="button" onClick={onClose}>
               Cancel
@@ -74,24 +89,30 @@ const ReviewModal = ({ project, onClose, onSuccess }) => {
   );
 };
 
-const StatCard = ({ label, value, hint }) => (
-  <div className="card">
-    <div className="card-laser-border" />
-    <p style={{ color: "var(--color-text-tertiary)", fontSize: 12, textTransform: "uppercase" }}>
+const StatCard = ({ label, value, hint, color = 'var(--nb-white)' }) => (
+  <div className="card" style={{ background: color }}>
+    <p style={{ 
+      color: "var(--nb-text-muted)", 
+      fontSize: 12, 
+      textTransform: "uppercase",
+      fontFamily: 'var(--font-heading)',
+      fontWeight: 700,
+      letterSpacing: '0.5px',
+    }}>
       {label}
     </p>
-    <p style={{ fontSize: 30, fontWeight: 700, margin: "6px 0" }}>{value}</p>
-    {hint ? <p style={{ color: "var(--color-text-secondary)", fontSize: 13 }}>{hint}</p> : null}
+    <p className="neo-stat-number" style={{ margin: "8px 0", fontSize: 36 }}>{value}</p>
+    {hint ? <p style={{ color: "var(--nb-text-secondary)", fontSize: 13, fontWeight: 500 }}>{hint}</p> : null}
   </div>
 );
 
 const EmptyState = ({ title, body, ctaLabel, ctaTo }) => (
-  <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
-    <div className="card-laser-border" />
-    <h3 style={{ fontSize: 22, marginBottom: 10 }}>{title}</h3>
-    <p style={{ color: "var(--color-text-secondary)", marginBottom: 20 }}>{body}</p>
+  <div className="card-static" style={{ textAlign: "center", padding: "48px 24px", background: 'var(--nb-cream)' }}>
+    <div style={{ fontSize: 40, marginBottom: 16 }}>📭</div>
+    <h3 style={{ fontSize: 20, marginBottom: 10, fontFamily: 'var(--font-heading)' }}>{title}</h3>
+    <p style={{ color: "var(--nb-text-secondary)", marginBottom: 20 }}>{body}</p>
     <Link to={ctaTo}>
-      <Button>{ctaLabel}</Button>
+      <Button>{ctaLabel} →</Button>
     </Link>
   </div>
 );
@@ -179,93 +200,102 @@ const Dashboard = () => {
     (p) => p.assignedFreelancer?._id === user._id && ["in-progress", "delivered"].includes(p.status)
   );
 
+  const statusBadgeColor = (status) => {
+    switch(status) {
+      case 'open': return 'badge-blue';
+      case 'in-progress': return 'badge-orange';
+      case 'delivered': return 'badge-purple';
+      case 'completed': return 'badge-green';
+      default: return '';
+    }
+  };
+
   return (
     <div className="container page-section">
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 20,
-          marginBottom: 28,
-          flexWrap: "wrap",
-        }}
-      >
+      {/* Dashboard Header */}
+      <div className="dashboard-header">
         <div>
-          <p style={{ color: "var(--color-accent-primary)", fontSize: 13, marginBottom: 8 }}>
-            {user.role === "client" ? "Client command center" : "Freelancer command center"}
-          </p>
-          <h1 style={{ fontSize: 40, marginBottom: 8 }}>Welcome back, {user.name}</h1>
-          <p style={{ color: "var(--color-text-secondary)", maxWidth: 620 }}>
+          <div className="dashboard-greeting" style={{ color: 'var(--nb-hot-pink)' }}>
+            {user.role === "client" ? "👤 Client Command Center" : "⚡ Freelancer Command Center"}
+          </div>
+          <h1 className="dashboard-name" style={{ fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
+            Welcome back, {user.name}
+          </h1>
+          <p style={{ color: "var(--nb-text-secondary)", maxWidth: 620, fontSize: 15 }}>
             {user.role === "client"
               ? "Review your active projects, incoming demand, and delivery pipeline."
               : "Track your gigs, proposal pipeline, and accepted work from one place."}
           </p>
         </div>
         <Link to={user.role === "client" ? "/post-job" : "/post-gig"}>
-          <Button>{user.role === "client" ? "Post another project" : "Create a new gig"}</Button>
+          <Button>{user.role === "client" ? "📋 Post another project" : "⚡ Create a new gig"}</Button>
         </Link>
       </div>
 
       {loading ? (
-        <div className="card">Loading dashboard...</div>
+        <div className="card-static neo-loading" style={{ padding: 40 }}>Loading dashboard...</div>
       ) : user.role === "client" ? (
         <>
-          <div className="stats-grid" style={{ marginBottom: 24 }}>
+          {/* Client Stats */}
+          <div className="stats-grid" style={{ marginBottom: 28 }}>
             <StatCard
               label="Open projects"
               value={projects.filter((item) => item.status === "open").length}
-              hint="Collecting fresh proposals"
+              hint="Collecting proposals"
+              color="var(--nb-blue)"
             />
             <StatCard
               label="Active hires"
               value={projects.filter((item) => ["in-progress", "delivered"].includes(item.status)).length}
-              hint="Work currently underway"
+              hint="Work underway"
+              color="var(--nb-yellow)"
             />
             <StatCard
               label="Completed"
               value={projects.filter((item) => item.status === "completed").length}
               hint="Successfully closed"
+              color="var(--nb-lime)"
             />
-            <StatCard label="Total spend" value={formatCurrency(clientSpend)} hint="Paid to freelancers" />
+            <StatCard
+              label="Total spend"
+              value={formatCurrency(clientSpend)}
+              hint="Paid to freelancers"
+              color="var(--nb-lavender)"
+            />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {/* Active Hires */}
             {projects.filter((p) => ["in-progress", "delivered"].includes(p.status)).length > 0 && (
-              <div className="card">
-                <div className="card-laser-border" />
-                <h2 style={{ fontSize: 24, marginBottom: 18 }}>Active Hires</h2>
+              <div className="card-static">
+                <span className="badge badge-orange" style={{ marginBottom: 16 }}>🔥 Active</span>
+                <h2 style={{ fontSize: 24, marginBottom: 20, fontFamily: 'var(--font-heading)' }}>Active Hires</h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   {projects
                     .filter((p) => ["in-progress", "delivered"].includes(p.status))
                     .map((project) => (
-                      <div key={project._id} className="card" style={{ background: "rgba(255,255,255,0.02)" }}>
-                        <div className="card-laser-border" />
+                      <div key={project._id} className="card" style={{ background: "var(--nb-cream)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 18, flexWrap: "wrap" }}>
                           <div>
-                            <h3 style={{ fontSize: 20, marginBottom: 4 }}>{project.title}</h3>
-                            <p style={{ color: "var(--color-text-secondary)", fontSize: 14, marginBottom: 12 }}>
+                            <h3 style={{ fontSize: 20, marginBottom: 6, fontFamily: 'var(--font-heading)' }}>{project.title}</h3>
+                            <p style={{ color: "var(--nb-text-secondary)", fontSize: 14, marginBottom: 12 }}>
                               Hired: {project.assignedFreelancer?.name || "Freelancer"}
                             </p>
-                            <span
-                              className="badge"
-                              style={{
-                                background: project.status === "delivered" ? "rgba(190, 242, 100, 0.1)" : "rgba(255,255,255,0.05)",
-                                color: project.status === "delivered" ? "var(--color-accent-secondary)" : "inherit",
-                              }}
-                            >
-                              {project.status === "delivered" ? "Pending Approval" : project.status}
+                            <span className={`badge ${project.status === "delivered" ? 'badge-purple' : 'badge-orange'}`}>
+                              {project.status === "delivered" ? "⏳ Pending Approval" : "🔄 " + project.status}
                             </span>
                           </div>
                           <div style={{ textAlign: "right", minWidth: 180 }}>
-                            <p style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>{formatCurrency(project.budget)}</p>
+                            <p style={{ fontSize: 22, fontWeight: 800, marginBottom: 12, fontFamily: 'var(--font-display)' }}>
+                              {formatCurrency(project.budget)}
+                            </p>
                             {project.status === "delivered" ? (
                               <Button size="small" onClick={() => updateProjectStatus(project._id, "completed")}>
-                                Approve & Complete
+                                ✅ Approve
                               </Button>
                             ) : (
                               <Button variant="outline" size="small" onClick={() => startChat(project)}>
-                                Message
+                                💬 Message
                               </Button>
                             )}
                           </div>
@@ -276,12 +306,13 @@ const Dashboard = () => {
               </div>
             )}
 
-            <div className="card">
-              <div className="card-laser-border" />
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18, gap: 12 }}>
+            {/* Project Pipeline */}
+            <div className="card-static">
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, gap: 12 }}>
                 <div>
-                  <h2 style={{ fontSize: 24 }}>Project pipeline</h2>
-                  <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>
+                  <span className="badge badge-blue" style={{ marginBottom: 12 }}>📋 Pipeline</span>
+                  <h2 style={{ fontSize: 24, fontFamily: 'var(--font-heading)' }}>Project Pipeline</h2>
+                  <p style={{ color: "var(--nb-text-secondary)", fontSize: 14 }}>
                     Manage your open projects and view history.
                   </p>
                 </div>
@@ -299,24 +330,30 @@ const Dashboard = () => {
                   {projects
                     .filter((p) => !["in-progress", "delivered"].includes(p.status))
                     .map((project) => (
-                      <div key={project._id} className="card" style={{ background: "rgba(255,255,255,0.02)" }}>
-                        <div className="card-laser-border" />
+                      <div key={project._id} className="card" style={{ background: "var(--nb-cream)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 18, flexWrap: "wrap" }}>
                           <Link to={`/jobs/${project._id}`} style={{ flex: 1 }}>
-                            <h3 style={{ fontSize: 18, marginBottom: 8 }}>{project.title}</h3>
-                            <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>
-                              Status: {project.status} . {project.bidsCount || 0} Proposals
-                            </p>
+                            <h3 style={{ fontSize: 18, marginBottom: 8, fontFamily: 'var(--font-heading)' }}>{project.title}</h3>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <span className={`badge ${statusBadgeColor(project.status)}`}>
+                                {project.status}
+                              </span>
+                              <span style={{ color: "var(--nb-text-secondary)", fontSize: 13, fontWeight: 600 }}>
+                                {project.bidsCount || 0} Proposals
+                              </span>
+                            </div>
                           </Link>
                           <div style={{ textAlign: "right" }}>
-                            <p style={{ fontWeight: 600, marginBottom: 8 }}>{formatCurrency(project.budget)}</p>
+                            <p style={{ fontWeight: 700, marginBottom: 8, fontSize: 18, fontFamily: 'var(--font-heading)' }}>
+                              {formatCurrency(project.budget)}
+                            </p>
                             {project.status === "completed" && (
                               <Button
                                 variant="outline"
                                 size="small"
                                 onClick={() => setSelectedProjectForReview(project)}
                               >
-                                Leave Review
+                                ⭐ Leave Review
                               </Button>
                             )}
                           </div>
@@ -330,51 +367,49 @@ const Dashboard = () => {
         </>
       ) : (
         <>
-          <div className="stats-grid" style={{ marginBottom: 24 }}>
-            <StatCard label="Active Work" value={activeWork.length} hint="Orders in progress" />
+          {/* Freelancer Stats */}
+          <div className="stats-grid" style={{ marginBottom: 28 }}>
+            <StatCard label="Active Work" value={activeWork.length} hint="Orders in progress" color="var(--nb-yellow)" />
             <StatCard
               label="Pending Review"
               value={activeWork.filter((p) => p.status === "delivered").length}
-              hint="Waiting for client approval"
+              hint="Awaiting client approval"
+              color="var(--nb-lavender)"
             />
-            <StatCard label="Accepted Bids" value={bids.filter((bid) => bid.status === "accepted").length} hint="Won projects" />
-            <StatCard label="Total Earnings" value={formatCurrency(freelancerEarnings)} hint="From completed jobs" />
+            <StatCard label="Accepted Bids" value={bids.filter((bid) => bid.status === "accepted").length} hint="Won projects" color="var(--nb-blue)" />
+            <StatCard label="Total Earnings" value={formatCurrency(freelancerEarnings)} hint="From completed jobs" color="var(--nb-lime)" />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {/* Active Work */}
             {activeWork.length > 0 && (
-              <div className="card">
-                <div className="card-laser-border" />
-                <h2 style={{ fontSize: 24, marginBottom: 18 }}>Active Work</h2>
+              <div className="card-static">
+                <span className="badge badge-orange" style={{ marginBottom: 16 }}>🔥 Active</span>
+                <h2 style={{ fontSize: 24, marginBottom: 20, fontFamily: 'var(--font-heading)' }}>Active Work</h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   {activeWork.map((project) => (
-                    <div key={project._id} className="card" style={{ background: "rgba(255,255,255,0.02)" }}>
-                      <div className="card-laser-border" />
+                    <div key={project._id} className="card" style={{ background: "var(--nb-cream)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 18, flexWrap: "wrap" }}>
                         <div>
-                          <h3 style={{ fontSize: 20, marginBottom: 4 }}>{project.title}</h3>
-                          <p style={{ color: "var(--color-text-secondary)", fontSize: 14, marginBottom: 12 }}>
+                          <h3 style={{ fontSize: 20, marginBottom: 6, fontFamily: 'var(--font-heading)' }}>{project.title}</h3>
+                          <p style={{ color: "var(--nb-text-secondary)", fontSize: 14, marginBottom: 12 }}>
                             Client: {project.client?.name}
                           </p>
-                          <span
-                            className="badge"
-                            style={{
-                              background: project.status === "delivered" ? "rgba(125, 211, 252, 0.1)" : "rgba(255,255,255,0.05)",
-                              color: project.status === "delivered" ? "var(--color-accent-primary)" : "inherit",
-                            }}
-                          >
-                            {project.status === "delivered" ? "Delivered (Awaiting Approval)" : "In Progress"}
+                          <span className={`badge ${project.status === "delivered" ? 'badge-purple' : 'badge-orange'}`}>
+                            {project.status === "delivered" ? "📦 Delivered (Awaiting Approval)" : "🔄 In Progress"}
                           </span>
                         </div>
                         <div style={{ textAlign: "right", minWidth: 180 }}>
-                          <p style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>{formatCurrency(project.budget)}</p>
+                          <p style={{ fontSize: 22, fontWeight: 800, marginBottom: 12, fontFamily: 'var(--font-display)' }}>
+                            {formatCurrency(project.budget)}
+                          </p>
                           {project.status === "in-progress" ? (
                             <Button size="small" onClick={() => updateProjectStatus(project._id, "delivered")}>
-                              Deliver Work
+                              📦 Deliver Work
                             </Button>
                           ) : (
                             <Button variant="outline" size="small" onClick={() => startChat(project)}>
-                              Message Client
+                              💬 Message Client
                             </Button>
                           )}
                         </div>
@@ -385,17 +420,17 @@ const Dashboard = () => {
               </div>
             )}
 
+            {/* Storefront + Proposals */}
             <div className="two-column-grid">
-              <div className="card">
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18, gap: 12 }}>
+              <div className="card-static">
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, gap: 12 }}>
                   <div>
-                    <h2 style={{ fontSize: 24 }}>Your storefront</h2>
-                    <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>Manage your published gigs.</p>
+                    <span className="badge badge-green" style={{ marginBottom: 12 }}>🏪 Storefront</span>
+                    <h2 style={{ fontSize: 22, fontFamily: 'var(--font-heading)' }}>Your Gigs</h2>
+                    <p style={{ color: "var(--nb-text-secondary)", fontSize: 14 }}>Manage your published gigs.</p>
                   </div>
                   <Link to="/post-gig">
-                    <Button variant="outline" size="small">
-                      Add gig
-                    </Button>
+                    <Button variant="outline" size="small">+ Add gig</Button>
                   </Link>
                 </div>
 
@@ -409,13 +444,13 @@ const Dashboard = () => {
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     {gigs.map((gig) => (
-                      <Link key={gig._id} to={`/gigs/${gig._id}`} className="card" style={{ background: "rgba(255,255,255,0.02)" }}>
+                      <Link key={gig._id} to={`/gigs/${gig._id}`} className="card" style={{ background: "var(--nb-cream)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
                           <div>
-                            <h3 style={{ fontSize: 18, marginBottom: 4 }}>{gig.title}</h3>
-                            <p style={{ color: "var(--color-text-secondary)", fontSize: 13 }}>{gig.category}</p>
+                            <h3 style={{ fontSize: 16, marginBottom: 4, fontFamily: 'var(--font-heading)' }}>{gig.title}</h3>
+                            <span className="badge" style={{ fontSize: 11, padding: '3px 8px' }}>{gig.category}</span>
                           </div>
-                          <p style={{ fontWeight: 600 }}>{formatCurrency(gig.price)}</p>
+                          <p style={{ fontWeight: 700, fontFamily: 'var(--font-heading)', fontSize: 18 }}>{formatCurrency(gig.price)}</p>
                         </div>
                       </Link>
                     ))}
@@ -423,16 +458,15 @@ const Dashboard = () => {
                 )}
               </div>
 
-              <div className="card">
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18, gap: 12 }}>
+              <div className="card-static">
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, gap: 12 }}>
                   <div>
-                    <h2 style={{ fontSize: 24 }}>Recent proposals</h2>
-                    <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>Track your sent bids.</p>
+                    <span className="badge badge-purple" style={{ marginBottom: 12 }}>📄 Proposals</span>
+                    <h2 style={{ fontSize: 22, fontFamily: 'var(--font-heading)' }}>Recent Proposals</h2>
+                    <p style={{ color: "var(--nb-text-secondary)", fontSize: 14 }}>Track your sent bids.</p>
                   </div>
                   <Link to="/projects">
-                    <Button variant="outline" size="small">
-                      Find work
-                    </Button>
+                    <Button variant="outline" size="small">Find work</Button>
                   </Link>
                 </div>
 
@@ -450,12 +484,14 @@ const Dashboard = () => {
                         key={bid._id}
                         to={`/jobs/${bid.project?._id}`}
                         className="card"
-                        style={{ background: "rgba(255,255,255,0.02)" }}
+                        style={{ background: "var(--nb-cream)" }}
                       >
-                        <h3 style={{ fontSize: 18, marginBottom: 4 }}>{bid.project?.title || "Project"}</h3>
+                        <h3 style={{ fontSize: 16, marginBottom: 6, fontFamily: 'var(--font-heading)' }}>{bid.project?.title || "Project"}</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <p style={{ color: "var(--color-text-secondary)", fontSize: 13 }}>Status: {bid.status}</p>
-                          <p style={{ fontWeight: 600 }}>{formatCurrency(bid.amount)}</p>
+                          <span className={`badge ${bid.status === 'accepted' ? 'badge-green' : bid.status === 'rejected' ? 'badge-pink' : ''}`}>
+                            {bid.status}
+                          </span>
+                          <p style={{ fontWeight: 700, fontFamily: 'var(--font-heading)' }}>{formatCurrency(bid.amount)}</p>
                         </div>
                       </Link>
                     ))}
@@ -464,29 +500,33 @@ const Dashboard = () => {
               </div>
             </div>
 
+            {/* Completed History */}
             {projects.filter((p) => p.status === "completed" && p.assignedFreelancer?._id === user._id).length > 0 && (
-              <div className="card">
-                <h2 style={{ fontSize: 24, marginBottom: 18 }}>Completed History</h2>
+              <div className="card-static">
+                <span className="badge badge-green" style={{ marginBottom: 16 }}>✅ Completed</span>
+                <h2 style={{ fontSize: 24, marginBottom: 20, fontFamily: 'var(--font-heading)' }}>Completed History</h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   {projects
                     .filter((p) => p.status === "completed" && p.assignedFreelancer?._id === user._id)
                     .map((project) => (
-                      <div key={project._id} className="card" style={{ background: "rgba(255,255,255,0.02)" }}>
+                      <div key={project._id} className="card" style={{ background: "var(--nb-cream)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 18, flexWrap: "wrap" }}>
                           <div>
-                            <h3 style={{ fontSize: 18, marginBottom: 4 }}>{project.title}</h3>
-                            <p style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>
-                              Client: {project.client?.name} . {formatRelativeDate(project.updatedAt)}
+                            <h3 style={{ fontSize: 18, marginBottom: 6, fontFamily: 'var(--font-heading)' }}>{project.title}</h3>
+                            <p style={{ color: "var(--nb-text-secondary)", fontSize: 14 }}>
+                              Client: {project.client?.name} · {formatRelativeDate(project.updatedAt)}
                             </p>
                           </div>
                           <div style={{ textAlign: "right" }}>
-                            <p style={{ fontWeight: 600, marginBottom: 8 }}>{formatCurrency(project.budget)}</p>
+                            <p style={{ fontWeight: 700, marginBottom: 8, fontFamily: 'var(--font-heading)', fontSize: 18 }}>
+                              {formatCurrency(project.budget)}
+                            </p>
                             <Button
                               variant="outline"
                               size="small"
                               onClick={() => setSelectedProjectForReview(project)}
                             >
-                              Leave Review
+                              ⭐ Leave Review
                             </Button>
                           </div>
                         </div>

@@ -1,0 +1,35 @@
+wing: update_v2_test
+rooms:
+- name: frontend
+  description: Files from frontend/
+  keywords:
+  - frontend
+  - frontend
+- name: backend
+  description: Files from backend/
+  keywords:
+  - backend
+  - backend
+- name: documentation
+  description: Files from docs/
+  keywords:
+  - documentation
+  - docs
+- name: skills
+  description: Files from skills/
+  keywords:
+  - skills
+  - skills
+- name: configuration
+  description: Files from config/
+  keywords:
+  - configuration
+  - config
+- name: scripts
+  description: Files from utils/
+  keywords:
+  - scripts
+  - utils
+- name: general
+  description: Files that don't fit other rooms
+  keywords: []

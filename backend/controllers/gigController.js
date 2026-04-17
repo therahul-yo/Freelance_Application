@@ -1,5 +1,6 @@
 import Gig from "../models/gigModel.js";
 import Project from "../models/projectModel.js";
+import Notification from "../models/notificationModel.js";
 
 const populateGig = (query) =>
   query.populate("freelancer", "name email rating numReviews profile");
@@ -39,7 +40,18 @@ const getGigById = async (req, res) => {
   try {
     const gig = await populateGig(Gig.findById(req.params.id));
     if (gig) {
-      res.json(gig);
+      let activeOrder = null;
+      if (req.user) {
+        const project = await Project.findOne({
+          client: req.user._id,
+          sourceGig: req.params.id,
+          status: { $in: ["in-progress", "delivered"] },
+        });
+        if (project) {
+          activeOrder = project._id;
+        }
+      }
+      res.json({ ...gig.toObject(), activeOrder });
     } else {
       res.status(404);
       throw new Error("Gig not found");
@@ -180,6 +192,18 @@ const purchaseGig = async (req, res) => {
       throw new Error("You cannot purchase your own gig");
     }
 
+    // Check for existing active order
+    const existingProject = await Project.findOne({
+      client: req.user._id,
+      sourceGig: req.params.id,
+      status: { $in: ["in-progress", "delivered"] },
+    });
+
+    if (existingProject) {
+      res.status(400);
+      throw new Error("You already have an active order for this gig");
+    }
+
     // Create a new project based on the gig
     const project = await Project.create({
       client: req.user._id,
@@ -191,6 +215,16 @@ const purchaseGig = async (req, res) => {
       status: "in-progress",
       assignedFreelancer: gig.freelancer._id,
       skillsRequired: gig.skills,
+      sourceGig: gig._id,
+    });
+
+    // Create notification for freelancer
+    await Notification.create({
+      recipient: gig.freelancer._id,
+      sender: req.user._id,
+      type: "acceptance",
+      content: `${req.user.name} purchased your gig: ${gig.title}`,
+      link: `/jobs/${project._id}`,
     });
 
     res.status(201).json(project);

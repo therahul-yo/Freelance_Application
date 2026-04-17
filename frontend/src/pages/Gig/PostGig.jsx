@@ -1,195 +1,200 @@
-import React, { useState } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../lib/api";
 
 const PostGig = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     category: "Web Development",
     price: "",
     deliveryTime: "3 days",
-    skills: ""
+    skills: "",
   });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const updateField = (event) => {
+    setFormData((current) => ({
+      ...current,
+      [event.target.name]: event.target.value,
+    }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.title.trim() || !formData.description.trim() || !formData.price) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
+  const submit = async (event) => {
+    event.preventDefault();
     setLoading(true);
 
     try {
-      const gigData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        category: formData.category,
-        price: parseFloat(formData.price),
-        deliveryTime: formData.deliveryTime,
-        skills: formData.skills.split(",").map(s => s.trim()).filter(s => s)
-      };
+      await api.post("/gigs", {
+        ...formData,
+        price: Number(formData.price),
+        skills: formData.skills
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter(Boolean),
+      });
 
-      await axios.post("http://localhost:5001/api/gigs", gigData);
-      toast.success("Gig published successfully!");
+      toast.success("Gig published.");
       navigate("/dashboard");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to post gig");
+      toast.error(error.response?.data?.message || "Could not publish gig");
     } finally {
       setLoading(false);
     }
   };
 
-  // Redirect if not logged in or not a freelancer
   if (!user) {
-    return (
-      <div className="container" style={{ paddingTop: "60px", textAlign: "center" }}>
-        <h2 style={{ marginBottom: "16px" }}>Please login to continue</h2>
-        <Button onClick={() => navigate("/login")}>Login</Button>
-      </div>
-    );
+    return <Navigate to="/login" replace />;
   }
 
   if (user.role !== "freelancer") {
     return (
-      <div className="container" style={{ paddingTop: "60px", textAlign: "center" }}>
-        <h2 style={{ marginBottom: "16px" }}>Only freelancers can create gigs</h2>
-        <p style={{ color: "var(--color-text-secondary)", marginBottom: "20px" }}>
-          As a client, you can post jobs instead.
-        </p>
-        <Button onClick={() => navigate("/post-job")}>Post a Job</Button>
+      <div className="container page-section">
+        <div className="card-static" style={{ textAlign: "center", padding: "80px 24px", maxWidth: 600, marginInline: 'auto', background: 'var(--nb-cream)' }}>
+          <div style={{ fontSize: 48, marginBottom: 24 }}>🚫</div>
+          <h1 style={{ fontSize: 32, marginBottom: 12, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>Creator Account Required</h1>
+          <p style={{ color: "var(--nb-text-secondary)", marginBottom: 24, fontSize: 18 }}>
+            Your current account is set as a <strong>{user.role}</strong>. Only users registered as 'freelancer' can publish service gigs.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <Button onClick={() => navigate("/post-job")}>📋 Post a Project instead</Button>
+            <Button variant="outline" onClick={() => navigate("/dashboard")}>Return to Dashboard</Button>
+          </div>
+          <p style={{ marginTop: 32, fontSize: 12, color: 'var(--nb-text-muted)' }}>
+            Logged in as: {user.email}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container" style={{ paddingTop: "40px", paddingBottom: "60px", maxWidth: "700px" }}>
-      <h1 style={{ fontSize: "28px", marginBottom: "8px" }}>Create a Gig</h1>
-      <p style={{ color: "var(--color-text-secondary)", marginBottom: "32px", fontSize: "14px" }}>
-        Showcase your skills and let clients find you
-      </p>
+    <div className="container page-section" style={{ maxWidth: 880 }}>
+      <div className="card-static form-page-header" style={{ marginBottom: 20, background: 'var(--nb-hot-pink)', color: 'var(--nb-white)' }}>
+        <span className="badge badge-dark" style={{ marginBottom: 12 }}>⚡ Freelancer Storefront</span>
+        <h1 className="form-page-title" style={{ fontFamily: 'var(--font-display)', textTransform: 'uppercase', color: 'var(--nb-white)' }}>
+          Create a gig
+        </h1>
+        <p className="form-page-desc" style={{ color: 'rgba(255,255,255,0.85)' }}>
+          Strong positioning, clear deliverables, and realistic pricing make your listing easier to buy.
+        </p>
+      </div>
 
-      <form onSubmit={handleSubmit}>
-        {/* Title */}
-        <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Gig Title *</label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            placeholder="I will build a professional React website"
-            className="input-field"
-            required
-          />
-          <p style={{ fontSize: "12px", color: "var(--color-text-tertiary)", marginTop: "6px" }}>
-            Start with "I will" to describe what you offer
-          </p>
-        </div>
+      <form className="card-static" onSubmit={submit}>
+        <div style={{ display: "grid", gap: 20 }}>
+          <div>
+            <label htmlFor="title" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+              Gig title
+            </label>
+            <input
+              id="title"
+              name="title"
+              className="input-field"
+              placeholder="I will build a fast React and Node.js SaaS MVP"
+              value={formData.title}
+              onChange={updateField}
+              required
+            />
+          </div>
 
-        {/* Description */}
-        <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Description *</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Describe your service in detail. What do you offer? What makes you stand out?"
-            className="input-field"
-            rows="6"
-            style={{ resize: "vertical", minHeight: "150px" }}
-            required
-          />
-        </div>
+          <div>
+            <label htmlFor="description" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+              What the buyer gets
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              className="input-field"
+              rows="8"
+              placeholder="Describe your deliverables, communication style, revision policy, and why you are credible."
+              value={formData.description}
+              onChange={updateField}
+              required
+              style={{ resize: "vertical" }}
+            />
+          </div>
 
-        {/* Category */}
-        <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Category</label>
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            className="input-field"
-          >
-            <option>Web Development</option>
-            <option>Mobile Development</option>
-            <option>Design</option>
-            <option>Data Science</option>
-            <option>Writing</option>
-            <option>Marketing</option>
-            <option>Video & Animation</option>
-            <option>Music & Audio</option>
-          </select>
-        </div>
+          <div className="three-column-grid">
+            <div>
+              <label htmlFor="category" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+                Category
+              </label>
+              <select id="category" name="category" className="input-field" value={formData.category} onChange={updateField}>
+                <option>Web Development</option>
+                <option>Mobile Development</option>
+                <option>Design</option>
+                <option>Data Science</option>
+                <option>Writing</option>
+                <option>Marketing</option>
+                <option>Video & Animation</option>
+                <option>Music & Audio</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="price" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+                Starting price ($)
+              </label>
+              <input
+                id="price"
+                name="price"
+                type="number"
+                min="1"
+                className="input-field"
+                placeholder="350"
+                value={formData.price}
+                onChange={updateField}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="deliveryTime" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+                Delivery time
+              </label>
+              <select
+                id="deliveryTime"
+                name="deliveryTime"
+                className="input-field"
+                value={formData.deliveryTime}
+                onChange={updateField}
+              >
+                <option>1 day</option>
+                <option>2 days</option>
+                <option>3 days</option>
+                <option>5 days</option>
+                <option>7 days</option>
+                <option>14 days</option>
+                <option>30 days</option>
+              </select>
+            </div>
+          </div>
 
-        {/* Price */}
-        <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Starting Price ($) *</label>
-          <input
-            type="number"
-            name="price"
-            value={formData.price}
-            onChange={handleChange}
-            placeholder="50"
-            className="input-field"
-            required
-            min="5"
-          />
-        </div>
+          <div>
+            <label htmlFor="skills" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+              Search tags
+            </label>
+            <input
+              id="skills"
+              name="skills"
+              className="input-field"
+              placeholder="React, Next.js, Node.js, MongoDB"
+              value={formData.skills}
+              onChange={updateField}
+            />
+          </div>
 
-        {/* Delivery Time */}
-        <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Delivery Time</label>
-          <select
-            name="deliveryTime"
-            value={formData.deliveryTime}
-            onChange={handleChange}
-            className="input-field"
-          >
-            <option>1 day</option>
-            <option>2 days</option>
-            <option>3 days</option>
-            <option>5 days</option>
-            <option>7 days</option>
-            <option>14 days</option>
-            <option>30 days</option>
-          </select>
-        </div>
-
-        {/* Skills */}
-        <div style={{ marginBottom: "32px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>Skills / Tags</label>
-          <input
-            type="text"
-            name="skills"
-            value={formData.skills}
-            onChange={handleChange}
-            placeholder="React, Node.js, MongoDB (comma separated)"
-            className="input-field"
-          />
-        </div>
-
-        {/* Submit */}
-        <div style={{ display: "flex", gap: "12px" }}>
-          <Button type="button" variant="outline" onClick={() => navigate(-1)} style={{ flex: 1 }}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={loading} style={{ flex: 1 }}>
-            {loading ? "Publishing..." : "Publish Gig"}
-          </Button>
+          <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
+            <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Publishing..." : "Publish Gig →"}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

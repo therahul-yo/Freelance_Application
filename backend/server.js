@@ -13,10 +13,11 @@ connectDB();
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Frontend URL (Vite default)
+    origin: allowedOrigin,
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -26,7 +27,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigin,
     credentials: true,
   })
 );
@@ -37,6 +38,8 @@ import messageRoutes from "./routes/messageRoutes.js";
 import projectRoutes from "./routes/projectRoutes.js";
 import bidRoutes from "./routes/bidRoutes.js";
 import gigRoutes from "./routes/gigRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 // Routes
@@ -46,6 +49,8 @@ app.use("/api/message", messageRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/bids", bidRoutes);
 app.use("/api/gigs", gigRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
