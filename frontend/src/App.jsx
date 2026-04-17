@@ -180,20 +180,22 @@ function App() {
             <div className="app-shell">
               <Navbar />
               <ToastContainer theme="dark" position="top-right" />
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/post-job" element={<PostJob />} />
-                <Route path="/jobs/:id" element={<JobDetails />} />
-                <Route path="/gigs" element={<BrowseGigs />} />
-                <Route path="/post-gig" element={<PostGig />} />
-                <Route path="/gigs/:id" element={<GigDetails />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/notifications" element={<Notifications />} />
-              </Routes>
+              <div className="unfold-animate">
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/post-job" element={<PostJob />} />
+                  <Route path="/jobs/:id" element={<JobDetails />} />
+                  <Route path="/gigs" element={<BrowseGigs />} />
+                  <Route path="/post-gig" element={<PostGig />} />
+                  <Route path="/gigs/:id" element={<GigDetails />} />
+                  <Route path="/chat" element={<Chat />} />
+                  <Route path="/notifications" element={<Notifications />} />
+                </Routes>
+              </div>
             </div>
           </Router>
         </ChatProvider>
