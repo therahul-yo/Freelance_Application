@@ -20,17 +20,16 @@ const createReview = async (req, res) => {
       throw new Error("Can only review completed projects");
     }
 
-    // Check if user is the client or the freelancer
+    // Only the client can leave a review for the freelancer
     const isClient = project.client.toString() === req.user._id.toString();
-    const isFreelancer = project.assignedFreelancer?.toString() === req.user._id.toString();
 
-    if (!isClient && !isFreelancer) {
+    if (!isClient) {
       res.status(403);
-      throw new Error("Not authorized to review this project");
+      throw new Error("Only the client can leave a review for a completed project");
     }
 
-    // Determine who is being reviewed
-    const revieweeId = isClient ? project.assignedFreelancer : project.client;
+    // The freelancer is being reviewed
+    const revieweeId = project.assignedFreelancer;
 
     // Check if review already exists from this reviewer for this project
     const existingReview = await Review.findOne({

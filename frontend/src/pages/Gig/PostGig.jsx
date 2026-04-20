@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
@@ -25,6 +25,31 @@ const PostGig = () => {
     }));
   };
 
+  // Draft loading and Discard check
+  useEffect(() => {
+    const saved = localStorage.getItem("draft_gig");
+    if (saved) {
+      try { setFormData(JSON.parse(saved)); } catch (e) {}
+    }
+    
+    const handleBeforeUnload = (e) => {
+      const hasContent = Object.values(formData).some(v => v !== "" && v !== "Web Development" && v !== "3 days");
+      if (hasContent) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []); // Intentionally empty to only run once for load
+
+  // Draft saving
+  useEffect(() => {
+    localStorage.setItem("draft_gig", JSON.stringify(formData));
+  }, [formData]);
+
+  const clearDraft = () => localStorage.removeItem("draft_gig");
+
   const submit = async (event) => {
     event.preventDefault();
     setLoading(true);
@@ -40,6 +65,7 @@ const PostGig = () => {
       });
 
       toast.success("Gig published.");
+      clearDraft();
       navigate("/dashboard");
     } catch (error) {
       toast.error(error.response?.data?.message || "Could not publish gig");
@@ -98,8 +124,13 @@ const PostGig = () => {
               placeholder="I will build a fast React and Node.js SaaS MVP"
               value={formData.title}
               onChange={updateField}
+              minLength="10"
+              maxLength="80"
               required
             />
+            <span style={{ fontSize: 11, color: "var(--nb-text-muted)", marginTop: 4, display: "block" }}>
+              {formData.title.length}/80 characters (min. 10)
+            </span>
           </div>
 
           <div>
@@ -114,9 +145,14 @@ const PostGig = () => {
               placeholder="Describe your deliverables, communication style, revision policy, and why you are credible."
               value={formData.description}
               onChange={updateField}
+              minLength="50"
+              maxLength="2000"
               required
               style={{ resize: "vertical" }}
             />
+            <span style={{ fontSize: 11, color: "var(--nb-text-muted)", marginTop: 4, display: "block" }}>
+              {formData.description.length}/2000 characters (min. 50 required for visibility)
+            </span>
           </div>
 
           <div className="three-column-grid">

@@ -1,23 +1,31 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { Suspense, lazy } from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 import Navbar from "./components/Navbar";
+import { ProtectedRoute, ClientRoute, FreelancerRoute, GuestRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import { ChatProvider } from "./context/ChatContext";
 import { NotificationProvider } from "./context/NotificationContext";
-import Login from "./pages/Auth/Login";
-import Register from "./pages/Auth/Register";
-import Chat from "./pages/Chat/index";
-import Notifications from "./pages/Notifications/index";
-import Projects from "./pages/Project/index";
-import PostJob from "./pages/Project/PostJob";
-import JobDetails from "./pages/Project/JobDetails";
-import Dashboard from "./pages/Dashboard/index";
-import BrowseGigs from "./pages/Gig/index";
-import PostGig from "./pages/Gig/PostGig";
-import GigDetails from "./pages/Gig/GigDetails";
 import Button from "./components/Button";
+import ErrorBoundary from "./components/ErrorBoundary";
+
+// Lazy Loaded Pages
+const Login = lazy(() => import("./pages/Auth/Login"));
+const Register = lazy(() => import("./pages/Auth/Register"));
+const Chat = lazy(() => import("./pages/Chat/index"));
+const Notifications = lazy(() => import("./pages/Notifications/index"));
+const Projects = lazy(() => import("./pages/Project/index"));
+const PostJob = lazy(() => import("./pages/Project/PostJob"));
+const JobDetails = lazy(() => import("./pages/Project/JobDetails"));
+const Dashboard = lazy(() => import("./pages/Dashboard/index"));
+const BrowseGigs = lazy(() => import("./pages/Gig/index"));
+const PostGig = lazy(() => import("./pages/Gig/PostGig"));
+const GigDetails = lazy(() => import("./pages/Gig/GigDetails"));
+const EditProfile = lazy(() => import("./pages/Profile/EditProfile"));
+const PublicProfile = lazy(() => import("./pages/Profile/PublicProfile"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const featureCards = [
   {
@@ -63,7 +71,7 @@ const LandingPage = () => (
         </div>
 
         <div className="hero-badge-row">
-          <span className="badge badge-dark">MERN Freelance Marketplace</span>
+          <span className="badge badge-dark">Freelance Marketplace</span>
           <span className="badge badge-pink">v2.0</span>
         </div>
 
@@ -110,7 +118,7 @@ const LandingPage = () => (
                 fontFamily: "var(--font-heading)",
                 fontWeight: 700,
                 textTransform: "uppercase",
-                color: "var(--nb-black)",
+                color: "#1a1a2e",
                 boxShadow: "var(--nb-shadow-sm)",
                 display: "flex",
                 alignItems: "center",
@@ -126,7 +134,7 @@ const LandingPage = () => (
     </section>
 
     {/* ===== SMILEY + STATS SECTION ===== */}
-    <section style={{ background: 'var(--nb-black)', borderTop: 'var(--nb-border)', borderBottom: 'var(--nb-border)' }}>
+    <section className="stats-section" style={{ borderTop: 'var(--nb-border)', borderBottom: 'var(--nb-border)' }}>
       <div className="container" style={{ padding: 'var(--space-2xl) 0' }}>
         <div className="stats-banner" style={{ border: 'none', boxShadow: 'none', background: 'transparent' }}>
           <div className="stats-banner-item">
@@ -188,13 +196,13 @@ const LandingPage = () => (
     <section className="container page-section" style={{ paddingTop: 0 }}>
       <div className="two-column-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
         {/* Client Side */}
-        <div className="card" style={{ background: 'var(--nb-yellow)' }}>
+        <div className="card" style={{ background: 'var(--nb-yellow)', color: '#08080A' }}>
           <div style={{ 
             display: 'inline-flex', 
             padding: '6px 14px', 
-            background: 'var(--nb-black)', 
+            background: '#08080A', 
             color: 'var(--nb-yellow)',
-            border: 'var(--nb-border)',
+            border: '3px solid #08080A',
             fontFamily: 'var(--font-heading)',
             fontWeight: 700,
             fontSize: 12,
@@ -211,18 +219,18 @@ const LandingPage = () => (
             freelancer without juggling separate tools.
           </p>
           <Link to="/post-job">
-            <Button style={{ background: 'var(--nb-black)', color: 'var(--nb-yellow)' }}>Post a project →</Button>
+            <Button variant="dark">Post a project →</Button>
           </Link>
         </div>
 
         {/* Freelancer Side */}
-        <div className="card" style={{ background: 'var(--nb-hot-pink)', color: 'var(--nb-white)' }}>
+        <div className="card" style={{ background: 'var(--nb-hot-pink)', color: '#FFFCF2' }}>
           <div style={{ 
             display: 'inline-flex', 
             padding: '6px 14px', 
-            background: 'var(--nb-white)', 
+            background: '#FFFCF2', 
             color: 'var(--nb-hot-pink)',
-            border: 'var(--nb-border)',
+            border: '3px solid #FFFCF2',
             fontFamily: 'var(--font-heading)',
             fontWeight: 700,
             fontSize: 12,
@@ -231,7 +239,7 @@ const LandingPage = () => (
           }}>
             ⚡ Freelancer Side
           </div>
-          <h2 style={{ fontSize: 32, marginBottom: 14, fontFamily: 'var(--font-display)', textTransform: 'uppercase', color: 'var(--nb-white)' }}>
+          <h2 style={{ fontSize: 32, marginBottom: 14, fontFamily: 'var(--font-display)', textTransform: 'uppercase', color: '#FFFCF2' }}>
             Package services, apply to jobs, and track deals.
           </h2>
           <p style={{ color: "rgba(255,255,255,0.85)", marginBottom: 24, fontSize: 16, lineHeight: 1.5 }}>
@@ -239,20 +247,20 @@ const LandingPage = () => (
             active opportunities from one dashboard.
           </p>
           <Link to="/post-gig">
-            <Button style={{ background: 'var(--nb-white)', color: 'var(--nb-hot-pink)' }}>Create a gig →</Button>
+            <Button style={{ background: '#FFFCF2', color: 'var(--nb-hot-pink)', border: '3px solid #FFFCF2' }}>Create a gig →</Button>
           </Link>
         </div>
       </div>
     </section>
 
     {/* ===== CTA SECTION ===== */}
-    <section style={{ background: 'var(--nb-black)', borderTop: 'var(--nb-border)' }}>
+    <section className="cta-section" style={{ background: '#08080A', borderTop: 'var(--nb-border)' }}>
       <div className="cta-zigzag" />
       <div className="container" style={{ padding: 'var(--space-4xl) 0', textAlign: 'center' }}>
         <span className="deco-star" style={{ fontSize: 48, marginBottom: 16, display: 'block' }}>✦</span>
         <h2 style={{ 
           fontSize: 'clamp(36px, 6vw, 64px)', 
-          color: 'var(--nb-white)', 
+          color: '#FFFCF2', 
           fontFamily: 'var(--font-display)', 
           textTransform: 'uppercase',
           marginBottom: 20,
@@ -264,12 +272,12 @@ const LandingPage = () => (
         </p>
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link to="/register">
-            <Button style={{ padding: '18px 40px', fontSize: 16, background: 'var(--nb-yellow)', color: 'var(--nb-black)' }}>
+            <Button style={{ padding: '18px 40px', fontSize: 16, background: 'var(--nb-yellow)', color: '#08080A' }}>
               Sign Up Free →
             </Button>
           </Link>
           <Link to="/projects">
-            <Button variant="outline" style={{ padding: '18px 40px', fontSize: 16, color: 'var(--nb-white)', borderColor: 'var(--nb-white)' }}>
+            <Button variant="outline" style={{ padding: '18px 40px', fontSize: 16, color: '#FFFCF2', borderColor: '#FFFCF2' }}>
               Browse Projects
             </Button>
           </Link>
@@ -316,20 +324,27 @@ function App() {
                 position="top-right" 
               />
               <div className="unfold-animate">
-                <Routes>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/post-job" element={<PostJob />} />
-                  <Route path="/jobs/:id" element={<JobDetails />} />
-                  <Route path="/gigs" element={<BrowseGigs />} />
-                  <Route path="/post-gig" element={<PostGig />} />
-                  <Route path="/gigs/:id" element={<GigDetails />} />
-                  <Route path="/chat" element={<Chat />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                </Routes>
+                <ErrorBoundary>
+                  <Suspense fallback={<div className="container" style={{ padding: 'var(--space-4xl) 0', textAlign: 'center', display: 'flex', justifyContent: 'center' }}><div className="neo-loading">Loading App...</div></div>}>
+                    <Routes>
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+                      <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+                      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                      <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+                      <Route path="/users/:id" element={<PublicProfile />} />
+                      <Route path="/projects" element={<Projects />} />
+                      <Route path="/post-job" element={<ClientRoute><PostJob /></ClientRoute>} />
+                      <Route path="/jobs/:id" element={<JobDetails />} />
+                      <Route path="/gigs" element={<BrowseGigs />} />
+                      <Route path="/post-gig" element={<FreelancerRoute><PostGig /></FreelancerRoute>} />
+                      <Route path="/gigs/:id" element={<GigDetails />} />
+                      <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </ErrorBoundary>
               </div>
             </div>
           </Router>

@@ -52,7 +52,7 @@ const projectSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["open", "in-progress", "delivered", "completed", "cancelled"],
+      enum: ["open", "in-progress", "delivered", "completed", "cancelled", "revision"],
       default: "open",
     },
     skillsRequired: [{ type: String }],
@@ -67,7 +67,21 @@ const projectSchema = new mongoose.Schema(
     bidsCount: {
       type: Number,
       default: 0
-    }
+    },
+    deliveryMessage: {
+      type: String,
+      default: ""
+    },
+    deliveryLinks: [{
+      type: String
+    }],
+    deliveredAt: {
+      type: Date,
+    },
+    revisionMessage: {
+      type: String,
+      default: ""
+    },
   },
   {
     timestamps: true,

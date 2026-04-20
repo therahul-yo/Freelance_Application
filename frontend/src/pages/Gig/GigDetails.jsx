@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
 import { useAuth } from "../../context/AuthContext";
@@ -11,6 +11,7 @@ const GigDetails = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [gig, setGig] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,6 +19,13 @@ const GigDetails = () => {
       try {
         const { data } = await api.get(`/gigs/${id}`);
         setGig(data);
+        // Fetch freelancer reviews
+        if (data.freelancer?._id) {
+          try {
+            const reviewsRes = await api.get(`/reviews/user/${data.freelancer._id}`);
+            setReviews(reviewsRes.data);
+          } catch { /* no reviews */ }
+        }
       } catch (error) {
         toast.error(error.response?.data?.message || "Gig not found");
         navigate("/gigs");
@@ -97,7 +105,9 @@ const GigDetails = () => {
                 {getUserInitials(gig.freelancer?.name)}
               </div>
               <div>
-                <p style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-heading)' }}>{gig.freelancer?.name}</p>
+                <Link to={`/users/${gig.freelancer?._id}`} style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-heading)', textDecoration: 'underline', textDecorationThickness: 2, textUnderlineOffset: 3 }}>
+                  {gig.freelancer?.name}
+                </Link>
                 <p style={{ color: "var(--nb-text-secondary)" }}>
                   {gig.freelancer?.profile?.title || "Freelancer"}
                 </p>
@@ -149,6 +159,40 @@ const GigDetails = () => {
               ✉ {gig.freelancer?.email}
             </p>
           </div>
+
+          {/* Reviews */}
+          <div className="card-static">
+            <span className="badge badge-orange" style={{ marginBottom: 16 }}>⭐ Reviews</span>
+            <h2 style={{ fontSize: 22, marginBottom: 14, fontFamily: 'var(--font-heading)' }}>
+              Freelancer Reviews ({reviews.length})
+            </h2>
+            {reviews.length === 0 ? (
+              <p style={{ color: "var(--nb-text-muted)", fontSize: 14 }}>No reviews yet for this freelancer.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {reviews.slice(0, 5).map((review) => (
+                  <div key={review._id} className="card" style={{ background: 'var(--nb-cream)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 14 }}>
+                        {review.reviewer?.name || 'User'}
+                      </span>
+                      <span style={{ color: 'var(--nb-yellow)', fontSize: 16 }}>
+                        {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                      </span>
+                    </div>
+                    <p style={{ color: 'var(--nb-text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
+                      {review.comment}
+                    </p>
+                  </div>
+                ))}
+                {reviews.length > 5 && (
+                  <Link to={`/users/${gig.freelancer?._id}`}>
+                    <Button variant="outline" size="small">View all reviews →</Button>
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sidebar */}
@@ -171,7 +215,7 @@ const GigDetails = () => {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {user?.role === "client" && (
-                  <Button onClick={handlePurchase} style={{ width: "100%", background: 'var(--nb-black)', color: 'var(--nb-yellow)' }}>
+                  <Button onClick={handlePurchase} variant="dark" style={{ width: "100%" }}>
                     🛒 Order Now
                   </Button>
                 )}

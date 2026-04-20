@@ -6,6 +6,7 @@ import {
   getMyProjects,
   createProject,
   updateProjectStatus,
+  updateProject,
 } from "../controllers/projectController.js";
 
 const router = express.Router();
@@ -13,6 +14,6 @@ const router = express.Router();
 router.route("/").get(getProjects).post(protect, createProject);
 router.route("/my").get(protect, getMyProjects);
 router.route("/:id/status").put(protect, updateProjectStatus);
-router.route("/:id").get(getProjectById);
+router.route("/:id").get(getProjectById).put(protect, updateProject);
 
 export default router;

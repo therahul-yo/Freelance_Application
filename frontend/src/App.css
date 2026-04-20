@@ -172,6 +172,14 @@
 .feature-icon-orange { background: var(--nb-orange); }
 
 /* Stats section */
+.stats-section {
+  background: #1a1a2e;
+}
+
+[data-theme="dark"] .stats-section {
+  background: #121216;
+}
+
 .stats-banner {
   background: var(--nb-black);
   border: var(--nb-border);

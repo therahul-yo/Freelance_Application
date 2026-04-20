@@ -112,22 +112,24 @@ const Register = () => {
                   const active = role === option.value;
 
                   return (
-                    <button
+                    <div
                       key={option.value}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setRole(option.value)}
                       className={`card-static role-option ${active ? 'active' : ''}`}
                       style={{
                         textAlign: "left",
                         cursor: 'pointer',
                         padding: '18px',
-                        background: active ? 'var(--nb-lavender)' : 'var(--nb-white)',
+                        background: active ? 'var(--nb-yellow)' : 'var(--nb-white)',
+                        color: active ? '#08080A' : 'var(--nb-text)',
                       }}
                     >
                       <div style={{ fontSize: 26, marginBottom: 8 }}>{option.icon}</div>
                       <p style={{ fontWeight: 800, marginBottom: 4, fontSize: 16 }}>{option.title}</p>
-                      <p style={{ color: "var(--nb-text-secondary)", fontSize: 13 }}>{option.body}</p>
-                    </button>
+                      <p style={{ color: active ? 'rgba(8,8,10,0.8)' : 'var(--nb-text-secondary)', fontSize: 13 }}>{option.body}</p>
+                    </div>
                   );
                 })}
               </div>

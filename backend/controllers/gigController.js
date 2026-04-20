@@ -10,11 +10,15 @@ const populateGig = (query) =>
 // @access  Public
 const getGigs = async (req, res) => {
   try {
-    const { category, search } = req.query;
+    const { category, search, freelancerId } = req.query;
     let query = { status: "active" };
     
     if (category && category !== "All") {
       query.category = category;
+    }
+
+    if (freelancerId) {
+      query.freelancer = freelancerId;
     }
     
     if (search) {
