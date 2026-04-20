@@ -41,7 +41,7 @@ const BrowseGigs = () => {
 
   const fetchGigs = async () => {
     try {
-      let url = "http://localhost:5001/api/gigs";
+      let url = `${import.meta.env.VITE_API_URL}/api/gigs`;
       const params = new URLSearchParams();
       if (selectedCategory !== "All") params.append("category", selectedCategory);
       if (params.toString()) url += `?${params.toString()}`;
@@ -67,7 +67,7 @@ const BrowseGigs = () => {
       return;
     }
     try {
-      const { data } = await axios.post("http://localhost:5001/api/chat", {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/chat`, {
         userId: freelancerId
       });
       navigate("/chat", { state: { selectedChatId: data._id } });
