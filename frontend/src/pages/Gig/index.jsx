@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
+import { CardSkeleton } from "../../components/Skeleton";
 
 const CATEGORIES = [
   "All",
@@ -22,10 +23,30 @@ const avatarColors = ['var(--nb-pink)', 'var(--nb-blue)', 'var(--nb-yellow)', 'v
 const BrowseGigs = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const initialCategory = searchParams.get('category') || "All";
+  const initialSearch = searchParams.get('q') || "";
+
   const [gigs, setGigs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+
+  const handleCategoryChange = (cat) => {
+    setSelectedCategory(cat);
+    if (cat === "All") searchParams.delete("category");
+    else searchParams.set("category", cat);
+    setSearchParams(searchParams);
+  };
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    if (!val) searchParams.delete("q");
+    else searchParams.set("q", val);
+    setSearchParams(searchParams, { replace: true });
+  };
 
   // Redirect freelancers - they should not browse gigs
   useEffect(() => {
@@ -103,7 +124,7 @@ const BrowseGigs = () => {
             <div 
               key={cat} 
               className={`category-option ${selectedCategory === cat ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(cat)}
+              onClick={() => handleCategoryChange(cat)}
             >
               <div className="category-radio">
                 {selectedCategory === cat && <div className="category-radio-dot" />}
@@ -122,7 +143,7 @@ const BrowseGigs = () => {
             type="text"
             placeholder="🔍 Search for services..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
             className="input-field"
             style={{ maxWidth: "500px", fontSize: "15px" }}
           />
@@ -130,9 +151,7 @@ const BrowseGigs = () => {
 
         {/* Results */}
         <p style={{ fontSize: 13, color: "var(--nb-text-muted)", marginBottom: 20, fontWeight: 600 }}>
-          {loading ? (
-            <span className="neo-loading">Loading...</span>
-          ) : `${filteredGigs.length} freelancers available`}
+          {!loading && `${filteredGigs.length} freelancers available`}
         </p>
 
         {/* No Gigs */}
@@ -140,14 +159,26 @@ const BrowseGigs = () => {
           <div className="card-static" style={{ textAlign: "center", padding: "60px 20px", background: 'var(--nb-cream)' }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
             <h3 style={{ marginBottom: 8, fontFamily: 'var(--font-heading)' }}>No freelancers found</h3>
-            <p style={{ color: "var(--nb-text-secondary)" }}>
-              Check back later for new talent
+            <p style={{ color: "var(--nb-text-secondary)", marginBottom: 16 }}>
+              Can't find what you're looking for? Post a targeted project instead.
             </p>
+            <Button variant="dark" onClick={() => navigate('/post-job')}>
+              Post a Project
+            </Button>
+          </div>
+        )}
+
+        {loading && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
           </div>
         )}
 
         {/* Gig Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
+        {!loading && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
           {filteredGigs.map((gig, idx) => (
             <div key={gig._id} className="gig-card">
               {/* Header */}
@@ -155,8 +186,18 @@ const BrowseGigs = () => {
                 <div className="gig-card-avatar" style={{ background: avatarColors[idx % avatarColors.length] }}>
                   {gig.freelancer?.name?.charAt(0) || "?"}
                 </div>
-                <div>
+                <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-heading)' }}>{gig.freelancer?.name}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                    <span style={{ color: 'var(--nb-yellow)', fontSize: 13, letterSpacing: 1 }}>
+                      {"★".repeat(Math.round(gig.freelancer?.rating || 0))}{"☆".repeat(5 - Math.round(gig.freelancer?.rating || 0))}
+                    </span>
+                    {gig.freelancer?.numReviews > 0 && (
+                      <span style={{ fontSize: 11, color: 'var(--nb-text-muted)', fontWeight: 600 }}>
+                        ({gig.freelancer.numReviews})
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -197,7 +238,8 @@ const BrowseGigs = () => {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </main>
     </div>
   );

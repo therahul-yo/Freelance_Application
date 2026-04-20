@@ -7,6 +7,7 @@ const Button = ({ children, variant = 'primary', className = '', size = '', styl
     danger: 'btn-danger',
     blue: 'btn-blue',
     green: 'btn-green',
+    dark: 'btn-dark',
   };
 
   const sizeStyles = size === 'small' ? { padding: '8px 16px', fontSize: '12px' } : {};

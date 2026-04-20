@@ -57,6 +57,299 @@
   color-scheme: light;
 }
 
+/* ============ DARK MODE — "Neo-Brutalist Night" ============ */
+/* Light mode: Cream paper with black ink stamps                */
+/* Dark mode: Black card with white neon stamps                 */
+/* ============================================================ */
+[data-theme="dark"] {
+  /* Base surfaces */
+  --nb-black: #FFFFFF;          /* "Black" becomes white for borders/text */
+  --nb-white: #121216;          /* Card backgrounds */
+  --nb-bg: #08080A;             /* Page background */
+  --nb-cream: #1A1A20;          /* Hover states, secondary surfaces */
+
+  /* Neo-brutalist accents — same hues, tuned for dark */
+  --nb-yellow: #FFD600;         /* High contrast, keeps button pop */
+  --nb-hot-pink: #FF2D87;       /* Vivid — works on dark */
+  --nb-pink: #FF6B9D;
+  --nb-blue: #4ECDC4;
+  --nb-electric-blue: #5C7CFF;  /* Slightly brighter */
+  --nb-purple: #C77DFF;
+  --nb-lime: #A8E6CF;
+  --nb-green: #2ECC71;
+  --nb-orange: #FF8C42;
+  --nb-red: #FF4757;
+
+  /* Text — high contrast */
+  --nb-text: #FFFFFF;
+  --nb-text-secondary: #C4C4D0;
+  --nb-text-muted: #78788C;
+
+  /* Borders — WHITE for that crisp brutalist pop */
+  --nb-border: 3px solid #FFFFFF;
+  --nb-border-thin: 2px solid #FFFFFF;
+
+  /* Shadows — dark gray, HARD, no blur */
+  --nb-shadow: 6px 6px 0px #1A1A20;
+  --nb-shadow-sm: 4px 4px 0px #1A1A20;
+  --nb-shadow-lg: 8px 8px 0px #1A1A20;
+  --nb-shadow-hover: 8px 8px 0px #2A2A35;
+  --nb-shadow-active: 2px 2px 0px #1A1A20;
+
+  color-scheme: dark;
+}
+
+/* ---- Navbar ---- */
+[data-theme="dark"] .ticker-bar {
+  background: var(--nb-hot-pink);
+}
+
+[data-theme="dark"] .navbar {
+  background: #121216;
+}
+
+[data-theme="dark"] .navbar-logo-accent {
+  background: var(--nb-hot-pink);
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+
+[data-theme="dark"] .navbar-logo {
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .nav-link.active {
+  background: var(--nb-hot-pink);
+  border-color: #FFFFFF;
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .nav-link:hover {
+  background: var(--nb-yellow);
+  color: #08080A;
+}
+
+[data-theme="dark"] .navbar-user-tag {
+  background: #1A1A20;
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+
+/* ---- Landing — Stickers & Hero ---- */
+[data-theme="dark"] .sticker {
+  color: #08080A;
+}
+
+[data-theme="dark"] .hero-title-highlight {
+  background: var(--nb-hot-pink);
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .hero-title-accent {
+  color: var(--nb-hot-pink);
+}
+
+/* ---- Stats Banner ---- */
+[data-theme="dark"] .stats-banner {
+  background: #1A1A20 !important;
+  border-color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .stats-banner-number {
+  color: var(--nb-yellow);
+}
+
+[data-theme="dark"] .stats-banner-label {
+  color: #C4C4D0;
+}
+
+/* ---- Cards ---- */
+[data-theme="dark"] .card {
+  color: var(--nb-text);
+}
+
+/* ---- Buttons ---- */
+/* Default button text stays dark on yellow bg */
+[data-theme="dark"] button:not(.neo-tab),
+[data-theme="dark"] .btn-neo {
+  color: #08080A;
+}
+
+[data-theme="dark"] button.btn-outline,
+[data-theme="dark"] .btn-neo.btn-outline {
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+
+[data-theme="dark"] button.btn-outline:hover,
+[data-theme="dark"] .btn-neo.btn-outline:hover {
+  background: #FFFFFF;
+  color: #08080A;
+}
+
+[data-theme="dark"] button.btn-primary,
+[data-theme="dark"] .btn-neo.btn-primary,
+[data-theme="dark"] button.btn-danger,
+[data-theme="dark"] .btn-neo.btn-danger,
+[data-theme="dark"] button.btn-blue,
+[data-theme="dark"] .btn-neo.btn-blue,
+[data-theme="dark"] button.btn-green,
+[data-theme="dark"] .btn-neo.btn-green {
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] button.btn-dark,
+[data-theme="dark"] .btn-neo.btn-dark {
+  color: #08080A;
+}
+
+/* ---- Badges & Tabs — dark text on bright backgrounds ---- */
+[data-theme="dark"] .badge,
+[data-theme="dark"] .sticker-3,
+[data-theme="dark"] .sticker-5,
+[data-theme="dark"] .neo-tab.active,
+[data-theme="dark"] .category-option.active {
+  color: #08080A;
+}
+
+[data-theme="dark"] .category-option.active .category-radio-dot {
+  background: #08080A;
+}
+
+[data-theme="dark"] .badge {
+  box-shadow: 2px 2px 0px #1A1A20;
+  border-color: #FFFFFF;
+}
+
+/* Vibrant badges get white text + white border */
+[data-theme="dark"] .badge-blue,
+[data-theme="dark"] .badge-purple,
+[data-theme="dark"] .badge-pink,
+[data-theme="dark"] .badge-green,
+[data-theme="dark"] .badge-orange {
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+
+[data-theme="dark"] .badge-lime {
+  color: #08080A;
+  border-color: #FFFFFF;
+}
+
+[data-theme="dark"] .badge-dark {
+  background: #1A1A20;
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+  box-shadow: 2px 2px 0px #1A1A20;
+}
+
+/* ---- Bright containers ---- */
+[data-theme="dark"] .card-yellow,
+[data-theme="dark"] .card-lime {
+  color: #08080A;
+}
+
+[data-theme="dark"] .card-yellow .btn-outline,
+[data-theme="dark"] [style*="background: var(--nb-yellow)"] .btn-outline {
+  color: #08080A;
+  border-color: #08080A;
+}
+[data-theme="dark"] .card-yellow .btn-outline:hover,
+[data-theme="dark"] [style*="background: var(--nb-yellow)"] .btn-outline:hover {
+  background: #08080A;
+  color: var(--nb-yellow);
+}
+
+/* ---- CTA sections ---- */
+[data-theme="dark"] .cta-section {
+  background: #1A1A20;
+}
+
+/* ---- Footer ---- */
+[data-theme="dark"] .footer {
+  background: #08080A;
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .footer a {
+  color: #C4C4D0;
+}
+
+[data-theme="dark"] .footer a:hover {
+  color: var(--nb-yellow);
+}
+
+/* ---- Links ---- */
+[data-theme="dark"] a {
+  color: inherit;
+}
+
+/* ---- Smiley ---- */
+[data-theme="dark"] .smiley {
+  background: var(--nb-yellow);
+}
+
+/* ---- Input Fields ---- */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select,
+[data-theme="dark"] .input-field {
+  background: #1A1A20;
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] .input-field::placeholder {
+  color: #78788C;
+}
+
+/* ---- Gig Cards ---- */
+[data-theme="dark"] .gig-card-body h4,
+[data-theme="dark"] .gig-card-header p {
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .gig-card {
+  background: #121216;
+}
+
+[data-theme="dark"] .gig-card-footer {
+  border-top-color: #FFFFFF;
+}
+
+/* ---- Browse Sidebar ---- */
+[data-theme="dark"] .browse-sidebar {
+  background: #08080A;
+}
+
+/* Dark mode toggle button */
+.dark-mode-toggle {
+  width: 40px;
+  height: 40px;
+  border: var(--nb-border);
+  background: var(--nb-yellow);
+  cursor: pointer;
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--nb-shadow-sm);
+  transition: all 0.15s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.dark-mode-toggle:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--nb-shadow);
+}
+
+.dark-mode-toggle:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--nb-shadow-active);
+}
+
 /* ============ RESET ============ */
 *,
 *::before,
@@ -178,6 +471,11 @@ button:disabled, .btn-neo:disabled {
   color: var(--nb-black);
 }
 
+.btn-dark {
+  background: var(--nb-black);
+  color: var(--nb-yellow);
+}
+
 .btn-outline:hover {
   background: var(--nb-yellow);
 }
@@ -195,6 +493,17 @@ button:disabled, .btn-neo:disabled {
 .btn-green {
   background: var(--nb-green);
   color: var(--nb-white);
+}
+
+/* ============ FORM LABELS ============ */
+.input-label {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 /* ============ INPUT FIELDS ============ */
@@ -612,6 +921,7 @@ label {
   font-size: 13px;
   text-transform: uppercase;
   background: transparent;
+  color: var(--nb-text);
   border: none !important;
   border-right: var(--nb-border) !important;
   box-shadow: none !important;
@@ -708,6 +1018,41 @@ label {
   );
 }
 
+/* ============ SKELETON LOADERS ============ */
+.skeleton-loader {
+  background: linear-gradient(
+    90deg,
+    rgba(200, 200, 200, 0.4) 25%,
+    rgba(200, 200, 200, 0.6) 37%,
+    rgba(200, 200, 200, 0.4) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeletonPulse 1.4s ease infinite;
+  border: var(--nb-border-thin);
+}
+
+[data-theme="dark"] .skeleton-loader {
+  background: linear-gradient(
+    90deg,
+    #1A1A20 25%,
+    #2A2A35 37%,
+    #1A1A20 63%
+  );
+  background-size: 400% 100%;
+  border-color: #2A2A35;
+}
+
+@keyframes skeletonPulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* ============ ACCESSIBILITY / FOCUS ============ */
+*:focus-visible {
+  outline: 3px dashed var(--nb-hot-pink);
+  outline-offset: 4px;
+}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width: 768px) {
   .container {
@@ -721,4 +1066,99 @@ label {
   h1 {
     font-size: clamp(28px, 7vw, 48px) !important;
   }
+  
+  .two-column-grid,
+  .three-column-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .navbar .container {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+
+  .nav-links {
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+  .nav-actions {
+    display: none; /* Hide on mobile structurally without full menu */
+  }
+
+.browse-container {
+    grid-template-columns: 1fr !important;
+  }
+ 
+  .browse-sidebar {
+    position: static !important;
+    max-height: none !important;
+    border-right: none !important;
+    border-bottom: var(--nb-border) !important;
+    padding-bottom: var(--space-lg);
+  }
+}
+
+/* ============ DARK MODE TEXT VISIBILITY FIXES ============ */
+
+/* Sidebar category options */
+[data-theme="dark"] .category-option {
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .category-option.active {
+  color: #08080A;
+}
+
+/* Sidebar titles */
+[data-theme="dark"] .browse-sidebar-title {
+  color: #FFFFFF;
+}
+
+/* Job listing metadata */
+[data-theme="dark"] .job-listing-time {
+  color: var(--nb-text-muted);
+}
+
+[data-theme="dark"] .job-listing-meta {
+  color: var(--nb-text-secondary);
+}
+
+/* Chat contact text */
+[data-theme="dark"] .chat-contact p {
+  color: var(--nb-text);
+}
+
+[data-theme="dark"] .chat-contact .chat-contact-name {
+  color: var(--nb-text);
+}
+
+/* Notification items */
+[data-theme="dark"] .notification-item {
+  color: var(--nb-text);
+}
+
+[data-theme="dark"] .notification-item p {
+  color: var(--nb-text);
+}
+
+/* Form page descriptions */
+[data-theme="dark"] .form-page-desc {
+  color: var(--nb-text-secondary);
+}
+
+/* Job listing title in dark mode */
+[data-theme="dark"] .job-listing-title {
+  color: var(--nb-text);
+}
+
+/* Chat sidebar header text */
+[data-theme="dark"] .chat-sidebar-header p {
+  color: var(--nb-text-secondary);
+}
+
+/* Chat context bar */
+[data-theme="dark"] .chat-context-bar p {
+  color: var(--nb-text-secondary);
 }

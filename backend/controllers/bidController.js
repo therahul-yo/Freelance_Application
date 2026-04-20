@@ -172,4 +172,75 @@ const acceptBid = async (req, res) => {
   }
 };
 
-export { createBid, getProjectBids, getMyBids, acceptBid };
+// @desc    Reject a bid
+// @route   PUT /api/bids/:id/reject
+// @access  Private
+const rejectBid = async (req, res) => {
+  try {
+    const bid = await Bid.findById(req.params.id).populate("project");
+    if (!bid) {
+      res.status(404);
+      throw new Error("Bid not found");
+    }
+
+    if (bid.project.client.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error("Only the project owner can reject a proposal");
+    }
+
+    if (bid.status !== "pending") {
+      res.status(400);
+      throw new Error("Can only reject pending proposals");
+    }
+
+    bid.status = "rejected";
+    await bid.save();
+
+    await Notification.create({
+      recipient: bid.freelancer,
+      sender: req.user._id,
+      type: "bid",
+      content: `Your proposal for "${bid.project.title}" was not selected.`,
+      link: `/jobs/${bid.project._id}`,
+    });
+
+    const rejectedBid = await populateBid(Bid.findById(bid._id));
+    res.json(rejectedBid);
+  } catch (error) {
+    res.status(400);
+    throw new Error(error.message);
+  }
+};
+
+// @desc    Withdraw a bid (freelancer)
+// @route   DELETE /api/bids/:id
+// @access  Private
+const withdrawBid = async (req, res) => {
+  try {
+    const bid = await Bid.findById(req.params.id).populate("project");
+    if (!bid) {
+      res.status(404);
+      throw new Error("Bid not found");
+    }
+
+    if (bid.freelancer.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error("You can only withdraw your own proposals");
+    }
+
+    if (bid.status !== "pending") {
+      res.status(400);
+      throw new Error("Can only withdraw pending proposals");
+    }
+
+    await Bid.findByIdAndDelete(req.params.id);
+    await Project.findByIdAndUpdate(bid.project._id, { $inc: { bidsCount: -1 } });
+
+    res.json({ message: "Proposal withdrawn" });
+  } catch (error) {
+    res.status(400);
+    throw new Error(error.message);
+  }
+};
+
+export { createBid, getProjectBids, getMyBids, acceptBid, rejectBid, withdrawBid };

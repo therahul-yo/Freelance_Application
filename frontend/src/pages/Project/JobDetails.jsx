@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
 import { useAuth } from "../../context/AuthContext";
@@ -145,6 +145,29 @@ const JobDetails = () => {
     }
   };
 
+  const rejectBid = async (bidId) => {
+    try {
+      await api.put(`/bids/${bidId}/reject`);
+      const { data } = await api.get(`/bids/project/${id}`);
+      setBids(data);
+      toast.success("Proposal rejected.");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not reject proposal");
+    }
+  };
+
+  const withdrawBid = async () => {
+    if (!myBid) return;
+    try {
+      await api.delete(`/bids/${myBid._id}`);
+      setMyBid(null);
+      await loadJob();
+      toast.success("Proposal withdrawn.");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not withdraw proposal");
+    }
+  };
+
   const updateStatus = async (status) => {
     setUpdatingStatus(true);
 
@@ -170,7 +193,7 @@ const JobDetails = () => {
   if (!job) return null;
 
   const statusBadge = (status) => {
-    const map = { open: 'badge-blue', 'in-progress': 'badge-orange', delivered: 'badge-purple', completed: 'badge-green', cancelled: 'badge-pink' };
+    const map = { open: 'badge-blue', 'in-progress': 'badge-orange', delivered: 'badge-purple', completed: 'badge-green', cancelled: 'badge-pink', revision: 'badge-pink' };
     return map[status] || '';
   };
 
@@ -208,11 +231,47 @@ const JobDetails = () => {
 
           {/* Assigned Freelancer */}
           {job.assignedFreelancer && (
-            <div className="card-static" style={{ background: 'var(--nb-lime)' }}>
+            <div className="card-static" style={{ background: 'var(--nb-lime)', color: '#08080A' }}>
               <span className="badge badge-dark" style={{ marginBottom: 12 }}>✅ Assigned</span>
-              <h3 style={{ fontSize: 22, marginBottom: 4, fontFamily: 'var(--font-heading)' }}>{job.assignedFreelancer.name}</h3>
+              <Link to={`/users/${job.assignedFreelancer._id}`} style={{ textDecoration: 'none', color: '#08080A' }}>
+                <h3 style={{ fontSize: 22, marginBottom: 4, fontFamily: 'var(--font-heading)', textDecoration: 'underline', textDecorationThickness: 2, textUnderlineOffset: 3 }}>{job.assignedFreelancer.name}</h3>
+              </Link>
               <p style={{ color: "var(--nb-text-secondary)" }}>
                 {job.assignedFreelancer.profile?.title || "Freelancer"}
+              </p>
+            </div>
+          )}
+
+          {/* Delivery Content */}
+          {job.deliveryMessage && ["delivered", "completed"].includes(job.status) && (
+            <div className="card-static" style={{ background: 'var(--nb-lavender)', color: '#08080A' }}>
+              <span className="badge badge-purple" style={{ marginBottom: 12 }}>📦 Delivery</span>
+              <h3 style={{ fontSize: 20, marginBottom: 10, fontFamily: 'var(--font-heading)' }}>Delivered Work</h3>
+              <p style={{ color: 'rgba(26, 26, 46, 0.85)', whiteSpace: 'pre-wrap', lineHeight: 1.6, marginBottom: 12 }}>
+                {job.deliveryMessage}
+              </p>
+              {job.deliveryLinks?.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {job.deliveryLinks.map((link, i) => (
+                    <a key={i} href={link} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: '2px solid #08080A', background: '#F5F0E8', color: '#08080A', fontWeight: 600, fontSize: 13, wordBreak: 'break-all' }}>
+                      🔗 {link}
+                    </a>
+                  ))}
+                </div>
+              )}
+              {job.deliveredAt && (
+                <p style={{ color: 'rgba(26, 26, 46, 0.7)', fontSize: 12, marginTop: 10 }}>Delivered {formatRelativeDate(job.deliveredAt)}</p>
+              )}
+            </div>
+          )}
+
+          {/* Revision Message */}
+          {job.revisionMessage && job.status === "revision" && (
+            <div className="card-static" style={{ background: 'var(--nb-hot-pink)', color: 'var(--nb-white)' }}>
+              <span className="badge" style={{ background: 'var(--nb-white)', color: 'var(--nb-hot-pink)', marginBottom: 12 }}>🔄 Revision Requested</span>
+              <h3 style={{ fontSize: 20, marginBottom: 10, fontFamily: 'var(--font-heading)', color: 'var(--nb-white)' }}>Client Feedback</h3>
+              <p style={{ color: 'rgba(255,255,255,0.9)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                {job.revisionMessage}
               </p>
             </div>
           )}
@@ -319,10 +378,22 @@ const JobDetails = () => {
                               {getUserInitials(bid.freelancer?.name)}
                             </div>
                             <div>
-                              <h3 style={{ fontSize: 18, fontFamily: 'var(--font-heading)' }}>{bid.freelancer?.name}</h3>
+                              <Link to={`/users/${bid.freelancer?._id}`}>
+                                <h3 style={{ fontSize: 18, fontFamily: 'var(--font-heading)', textDecoration: 'underline', textDecorationThickness: 2, textUnderlineOffset: 3 }}>{bid.freelancer?.name}</h3>
+                              </Link>
                               <p style={{ color: "var(--nb-text-secondary)", fontSize: 13 }}>
                                 {bid.freelancer?.profile?.title || "Freelancer"}
                               </p>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                                <span style={{ color: 'var(--nb-yellow)', fontSize: 13, letterSpacing: 1 }}>
+                                  {"★".repeat(Math.round(bid.freelancer?.rating || 0))}{"☆".repeat(5 - Math.round(bid.freelancer?.rating || 0))}
+                                </span>
+                                {bid.freelancer?.numReviews > 0 && (
+                                  <span style={{ fontSize: 11, color: 'var(--nb-text-muted)', fontWeight: 600 }}>
+                                    {bid.freelancer.rating.toFixed(1)} ({bid.freelancer.numReviews} review{bid.freelancer.numReviews !== 1 ? 's' : ''})
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <p style={{ color: "var(--nb-text-secondary)", marginBottom: 10, whiteSpace: "pre-wrap", fontSize: 14 }}>
@@ -358,6 +429,14 @@ const JobDetails = () => {
                                 variant="outline"
                                 style={{ width: "100%" }}
                                 size="small"
+                                onClick={() => rejectBid(bid._id)}
+                              >
+                                ✕ Reject
+                              </Button>
+                              <Button
+                                variant="outline"
+                                style={{ width: "100%" }}
+                                size="small"
                                 onClick={() => messageFreelancer(bid)}
                               >
                                 💬 Message
@@ -377,8 +456,8 @@ const JobDetails = () => {
         {/* Sidebar */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Budget Card */}
-          <div className="card-static" style={{ background: 'var(--nb-yellow)' }}>
-            <label style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.5px', color: 'var(--nb-text-muted)' }}>
+          <div className="card-static" style={{ background: 'var(--nb-yellow)', color: '#08080A' }}>
+            <label style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.5px', color: 'rgba(26, 26, 46, 0.7)' }}>
               Budget
             </label>
             <h2 style={{ fontSize: 36, marginBottom: 14, fontFamily: 'var(--font-display)' }}>
@@ -388,7 +467,7 @@ const JobDetails = () => {
                   )}/hr`
                 : formatCurrency(job.budget)}
             </h2>
-            <p style={{ color: "var(--nb-text-secondary)", marginBottom: 20, fontWeight: 600 }}>
+            <p style={{ color: "rgba(26, 26, 46, 0.85)", marginBottom: 20, fontWeight: 600 }}>
               📋 {job.bidsCount || 0} proposal{job.bidsCount === 1 ? "" : "s"} received
             </p>
 
@@ -397,10 +476,16 @@ const JobDetails = () => {
                 <Button
                   onClick={() => setShowProposalForm(true)}
                   disabled={Boolean(myBid) || job.status !== "open"}
-                  style={{ width: "100%", background: 'var(--nb-black)', color: 'var(--nb-yellow)' }}
+                  variant="dark"
+                  style={{ width: "100%" }}
                 >
                   {myBid ? `Proposal ${myBid.status}` : "Submit Proposal →"}
                 </Button>
+                {myBid && myBid.status === "pending" && (
+                  <Button variant="outline" onClick={withdrawBid} style={{ width: "100%" }}>
+                    ✕ Withdraw Proposal
+                  </Button>
+                )}
                 <Button variant="outline" onClick={startChat} style={{ width: "100%" }}>
                   💬 Message Client
                 </Button>
@@ -451,7 +536,9 @@ const JobDetails = () => {
                 {getUserInitials(job.client?.name)}
               </div>
               <div>
-                <h3 style={{ fontSize: 20, fontFamily: 'var(--font-heading)' }}>{job.client?.name}</h3>
+                <Link to={`/users/${job.client?._id}`}>
+                  <h3 style={{ fontSize: 20, fontFamily: 'var(--font-heading)', textDecoration: 'underline', textDecorationThickness: 2, textUnderlineOffset: 3 }}>{job.client?.name}</h3>
+                </Link>
                 <p style={{ color: "var(--nb-text-secondary)", fontSize: 14 }}>
                   {job.client?.profile?.title || "Marketplace client"}
                 </p>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -14,6 +14,28 @@ const Navbar = () => {
 
   const isFreelancer = user?.role === 'freelancer';
   const isClient = user?.role === 'client';
+
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) return savedTheme === 'dark';
+    return false;
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setDarkMode(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const NavLink = ({ to, children }) => {
     const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
@@ -69,7 +91,7 @@ const Navbar = () => {
                     Alerts{unreadCount > 0 && (
                       <span style={{
                         background: 'var(--nb-hot-pink)',
-                        color: 'white',
+                        color: 'var(--nb-white)',
                         padding: '2px 6px',
                         fontSize: '10px',
                         marginLeft: '6px',
@@ -98,9 +120,9 @@ const Navbar = () => {
                     <Button style={{ padding: '8px 16px', fontSize: '12px' }}>📋 Post Job</Button>
                   </Link>
                 )}
-                <div className="navbar-user-tag">
-                  {user.name}
-                </div>
+                <Link to="/profile/edit" className="navbar-user-tag" style={{ textDecoration: 'none' }}>
+                  ✏️ {user.name}
+                </Link>
                 <Button variant="outline" onClick={logout} style={{ padding: '8px 16px', fontSize: '12px' }}>
                   Log Out
                 </Button>
@@ -115,6 +137,13 @@ const Navbar = () => {
                 </Link>
               </>
             )}
+            <button
+              className="dark-mode-toggle"
+              onClick={() => setDarkMode(prev => !prev)}
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {darkMode ? '☀️' : '🌙'}
+            </button>
           </div>
         </div>
       </nav>
