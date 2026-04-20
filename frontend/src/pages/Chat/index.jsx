@@ -6,7 +6,9 @@ import { toast } from "react-toastify";
 import io from "socket.io-client";
 import Button from "../../components/Button";
 
-const ENDPOINT = "http://localhost:5001";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
+const ENDPOINT = import.meta.env.VITE_SOCKET_URL || API_URL;
 let socket;
 
 const Chat = () => {

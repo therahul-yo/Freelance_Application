@@ -5,6 +5,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
 const CATEGORIES = [
   "All Categories",
   "Web Development",
@@ -38,7 +40,7 @@ const Projects = () => {
 
   const fetchJobs = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5001/api/projects");
+      const { data } = await axios.get(`${API_URL}/api/projects`);
       setJobs(data);
     } catch (error) {
       console.error("Error fetching jobs:", error);

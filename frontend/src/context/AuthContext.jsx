@@ -2,6 +2,8 @@ import { createContext, useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
 const AuthContext = createContext();
 
 axios.defaults.withCredentials = true;
@@ -16,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     // Check if user is logged in
     const checkUser = async () => {
       try {
-        const { data } = await axios.get("http://localhost:5001/api/users/profile");
+        const { data } = await axios.get(`${API_URL}/api/users/profile`);
         setUser(data);
       } catch (error) {
         setUser(null);
@@ -30,7 +32,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const { data } = await axios.post("http://localhost:5001/api/users/auth", {
+      const { data } = await axios.post(`${API_URL}/api/users/auth`, {
         email,
         password,
       });
@@ -45,7 +47,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password, role) => {
     try {
-      const { data } = await axios.post("http://localhost:5001/api/users", {
+      const { data } = await axios.post(`${API_URL}/api/users`, {
         name,
         email,
         password,
@@ -62,7 +64,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post("http://localhost:5001/api/users/logout");
+      await axios.post(`${API_URL}/api/users/logout`);
       setUser(null);
       toast.success("Logged out");
     } catch (error) {

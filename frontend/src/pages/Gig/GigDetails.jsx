@@ -5,6 +5,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
 const GigDetails = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -15,7 +17,7 @@ const GigDetails = () => {
   useEffect(() => {
     const fetchGig = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5001/api/gigs/${id}`);
+        const { data } = await axios.get(`${API_URL}/api/gigs/${id}`);
         setGig(data);
       } catch (error) {
         toast.error("Gig not found");
@@ -38,7 +40,7 @@ const GigDetails = () => {
       return;
     }
     try {
-      const { data } = await axios.post("http://localhost:5001/api/chat", {
+      const { data } = await axios.post(`${API_URL}/api/chat`, {
         userId: gig.freelancer._id
       });
       navigate("/chat", { state: { selectedChatId: data._id } });

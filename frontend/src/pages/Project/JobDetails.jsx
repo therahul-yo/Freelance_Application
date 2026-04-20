@@ -5,6 +5,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
 const JobDetails = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -18,7 +20,7 @@ const JobDetails = () => {
   useEffect(() => {
     const fetchJob = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5001/api/projects/${id}`);
+        const { data } = await axios.get(`${API_URL}/api/projects/${id}`);
         setJob(data);
       } catch (error) {
         toast.error("Job not found");
@@ -40,7 +42,7 @@ const JobDetails = () => {
 
     setSubmitting(true);
     try {
-      await axios.post("http://localhost:5001/api/bids", {
+      await axios.post(`${API_URL}/api/bids`, {
         project: id,
         amount: parseFloat(proposal.bidAmount),
         proposal: proposal.coverLetter,
@@ -62,7 +64,7 @@ const JobDetails = () => {
       return;
     }
     try {
-      const { data } = await axios.post("http://localhost:5001/api/chat", {
+      const { data } = await axios.post(`${API_URL}/api/chat`, {
         userId: job.client._id || job.client
       });
       navigate("/chat", { state: { selectedChatId: data._id } });

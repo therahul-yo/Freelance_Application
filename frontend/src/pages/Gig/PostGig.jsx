@@ -5,6 +5,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
 const PostGig = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -43,7 +45,7 @@ const PostGig = () => {
         skills: formData.skills.split(",").map(s => s.trim()).filter(s => s)
       };
 
-      await axios.post("http://localhost:5001/api/gigs", gigData);
+      await axios.post(`${API_URL}/api/gigs`, gigData);
       toast.success("Gig published successfully!");
       navigate("/dashboard");
     } catch (error) {

@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Button from "../../components/Button";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -24,20 +26,20 @@ const Dashboard = () => {
     try {
       if (user.role === "client") {
         // Fetch jobs posted by this client
-        const { data } = await axios.get("http://localhost:5001/api/projects");
+        const { data } = await axios.get(`${API_URL}/api/projects`);
         const myPostedJobs = data.filter(job => job.client === user._id || job.client?._id === user._id);
         setMyJobs(myPostedJobs);
       } else {
         // Fetch bids by this freelancer
         try {
-          const { data: bids } = await axios.get("http://localhost:5001/api/bids/my");
+          const { data: bids } = await axios.get(`${API_URL}/api/bids/my`);
           setMyBids(bids);
         } catch (e) {
           console.log("No bids yet");
         }
         // Fetch gigs by this freelancer
         try {
-          const { data: gigs } = await axios.get("http://localhost:5001/api/gigs/my");
+          const { data: gigs } = await axios.get(`${API_URL}/api/gigs/my`);
           setMyGigs(gigs);
         } catch (e) {
           console.log("No gigs yet");

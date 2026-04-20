@@ -5,6 +5,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
 const CATEGORIES = [
   "All",
   "Web Development",
@@ -39,7 +41,7 @@ const BrowseGigs = () => {
 
   const fetchGigs = async () => {
     try {
-      let url = "http://localhost:5001/api/gigs";
+      let url = `${API_URL}/api/gigs`;
       const params = new URLSearchParams();
       if (selectedCategory !== "All") params.append("category", selectedCategory);
       if (params.toString()) url += `?${params.toString()}`;
@@ -65,7 +67,7 @@ const BrowseGigs = () => {
       return;
     }
     try {
-      const { data } = await axios.post("http://localhost:5001/api/chat", {
+      const { data } = await axios.post(`${API_URL}/api/chat`, {
         userId: freelancerId
       });
       navigate("/chat", { state: { selectedChatId: data._id } });
