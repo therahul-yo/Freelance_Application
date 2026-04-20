@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -14,6 +14,28 @@ const Navbar = () => {
 
   const isFreelancer = user?.role === 'freelancer';
   const isClient = user?.role === 'client';
+
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) return savedTheme === 'dark';
+    return false;
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setDarkMode(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const NavLink = ({ to, children }) => {
     const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
@@ -105,21 +127,28 @@ const Navbar = () => {
                   Log Out
                 </Button>
               </>
-      ) : (
-        <>
-          <Link to="/login">
-            <Button variant="outline" style={{ padding: '10px 22px', fontSize: '13px' }}>Log In</Button>
-          </Link>
-          <Link to="/register">
-            <Button style={{ padding: '10px 22px', fontSize: '13px' }}>Sign Up →</Button>
-          </Link>
-        </>
-      )}
-    </div>
-  </div>
-</nav>
-</>
-);
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" style={{ padding: '10px 22px', fontSize: '13px' }}>Log In</Button>
+                </Link>
+                <Link to="/register">
+                  <Button style={{ padding: '10px 22px', fontSize: '13px' }}>Sign Up →</Button>
+                </Link>
+              </>
+            )}
+            <button
+              className="dark-mode-toggle"
+              onClick={() => setDarkMode(prev => !prev)}
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {darkMode ? '☀️' : '🌙'}
+            </button>
+          </div>
+        </div>
+      </nav>
+    </>
+  );
 };
 
 export default Navbar;
