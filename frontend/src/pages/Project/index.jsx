@@ -38,7 +38,7 @@ const Projects = () => {
 
   const fetchJobs = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5001/api/projects");
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects`);
       setJobs(data);
     } catch (error) {
       console.error("Error fetching jobs:", error);
