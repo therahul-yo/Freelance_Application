@@ -13,11 +13,15 @@ connectDB();
 
 const app = express();
 const server = http.createServer(app);
-const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+const allowedOrigins = [
+  process.env.CLIENT_URL || "http://localhost:5173",
+  "https://freelance-application.vercel.app",
+  "https://freelance-application-coral.vercel.app",
+];
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigin,
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -27,7 +31,14 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
