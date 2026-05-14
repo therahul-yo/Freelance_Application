@@ -12,7 +12,7 @@ const populateProject = (query) =>
 // @access  Public
 const getProjects = async (req, res) => {
   try {
-    const { category, search, status, clientId } = req.query;
+    const { category, search, status, clientId, page = 1, limit = 20 } = req.query;
     const query = {};
 
     if (status) {
@@ -37,8 +37,21 @@ const getProjects = async (req, res) => {
       ];
     }
 
-    const projects = await populateProject(Project.find(query).sort({ createdAt: -1 }));
-    res.json(projects);
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [projects, total] = await Promise.all([
+      populateProject(Project.find(query).sort({ createdAt: -1 }).skip(skip).limit(limitNum)),
+      Project.countDocuments(query),
+    ]);
+
+    res.json({
+      projects,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum),
+      total,
+    });
   } catch (error) {
     res.status(400);
     throw new Error(error.message);

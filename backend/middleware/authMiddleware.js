@@ -13,8 +13,7 @@ const protect = async (req, res, next) => {
       req.user = await User.findById(decoded.userId).select("-password");
 
       next();
-    } catch (error) {
-      console.error(error);
+    } catch {
       res.status(401);
       throw new Error("Not authorized, token failed");
     }
@@ -31,8 +30,8 @@ const optionalProtect = async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.userId).select("-password");
-    } catch (error) {
-      console.error("Optional Auth Token Failed:", error.message);
+    } catch {
+      // Invalid token — treat as unauthenticated
     }
   }
   next();

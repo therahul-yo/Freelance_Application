@@ -69,7 +69,7 @@ const Chat = () => {
     socket = io(SOCKET_URL, { withCredentials: true });
     socket.emit("setup", user);
 
-    socket.on("message recieved", (incomingMessage) => {
+    socket.on("message received", (incomingMessage) => {
       if (selectedChatRef.current?._id === incomingMessage.chat?._id) {
         setMessages((current) => [...current, incomingMessage]);
       }

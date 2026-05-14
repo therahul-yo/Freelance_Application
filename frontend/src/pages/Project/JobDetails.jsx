@@ -6,10 +6,15 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/api";
 import { formatCurrency, formatRelativeDate, getUserInitials } from "../../utils/formatters";
 
-const initialProposal = {
-  coverLetter: "",
-  bidAmount: "",
-  deliveryTime: "1 week",
+const initialProposal = { coverLetter: "", bidAmount: "", deliveryTime: "1 week" };
+
+const STATUS_COLORS = {
+  open: 'var(--blue)',
+  'in-progress': 'var(--yellow)',
+  delivered: 'var(--blue)',
+  completed: 'var(--ink)',
+  revision: 'var(--red)',
+  cancelled: 'var(--red)',
 };
 
 const JobDetails = () => {
@@ -40,12 +45,10 @@ const JobDetails = () => {
     const load = async () => {
       try {
         const project = await loadJob();
-
         if (user?.role === "client" && project.client?._id === user._id) {
           const { data } = await api.get(`/bids/project/${id}`);
           setBids(data);
         }
-
         if (user?.role === "freelancer") {
           const { data } = await api.get("/bids/my");
           const matchingBid = data.find((bid) => bid.project?._id === id);
@@ -54,21 +57,13 @@ const JobDetails = () => {
       } catch (error) {
         toast.error(error.response?.data?.message || "Project not found");
         navigate("/projects");
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     };
-
     load();
   }, [id, loadJob, navigate, user]);
 
   const startChat = async () => {
-    if (!user) {
-      toast.info("Log in first to start a conversation.");
-      navigate("/login");
-      return;
-    }
-
+    if (!user) { toast.info("Log in first to start a conversation."); navigate("/login"); return; }
     try {
       const { data } = await api.post("/chat", {
         userId: job.client._id,
@@ -76,7 +71,6 @@ const JobDetails = () => {
         contextType: "project",
         contextTitle: job.title,
       });
-
       navigate("/chat", { state: { selectedChatId: data._id } });
     } catch (error) {
       toast.error(error.response?.data?.message || "Could not start chat");
@@ -92,7 +86,6 @@ const JobDetails = () => {
         contextTitle: job.title,
         contextBidId: bid._id,
       });
-
       navigate("/chat", { state: { selectedChatId: data._id } });
     } catch (error) {
       toast.error(error.response?.data?.message || "Could not start chat");
@@ -101,15 +94,8 @@ const JobDetails = () => {
 
   const submitProposal = async (event) => {
     event.preventDefault();
-
-    if (!user) {
-      toast.info("Log in first to submit a proposal.");
-      navigate("/login");
-      return;
-    }
-
+    if (!user) { toast.info("Log in first to submit a proposal."); navigate("/login"); return; }
     setSubmitting(true);
-
     try {
       const { data } = await api.post("/bids", {
         project: id,
@@ -117,7 +103,6 @@ const JobDetails = () => {
         proposal: proposal.coverLetter,
         deliveryTime: proposal.deliveryTime,
       });
-
       setMyBid(data);
       setProposal(initialProposal);
       setShowProposalForm(false);
@@ -125,9 +110,7 @@ const JobDetails = () => {
       toast.success("Proposal submitted.");
     } catch (error) {
       toast.error(error.response?.data?.message || "Proposal could not be submitted");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
   const acceptBid = async (bidId) => {
@@ -139,7 +122,7 @@ const JobDetails = () => {
       ]);
       setJob(projectResponse.data);
       setBids(bidsResponse.data);
-      toast.success("Proposal accepted. Project moved to in-progress.");
+      toast.success("Proposal accepted.");
     } catch (error) {
       toast.error(error.response?.data?.message || "Could not accept proposal");
     }
@@ -170,145 +153,136 @@ const JobDetails = () => {
 
   const updateStatus = async (status) => {
     setUpdatingStatus(true);
-
     try {
       const { data } = await api.put(`/projects/${id}/status`, { status });
       setJob(data);
       toast.success(`Project marked as ${status}.`);
     } catch (error) {
       toast.error(error.response?.data?.message || "Status update failed");
-    } finally {
-      setUpdatingStatus(false);
-    }
+    } finally { setUpdatingStatus(false); }
   };
 
   if (loading) {
     return (
       <div className="container page-section">
-        <div className="card-static neo-loading" style={{ padding: 40 }}>Loading project...</div>
+        <div className="card-static neo-loading" style={{ padding: 40, textAlign: 'center' }}>Loading project...</div>
       </div>
     );
   }
 
   if (!job) return null;
 
-  const statusBadge = (status) => {
-    const map = { open: 'badge-blue', 'in-progress': 'badge-orange', delivered: 'badge-purple', completed: 'badge-green', cancelled: 'badge-pink', revision: 'badge-pink' };
-    return map[status] || '';
-  };
-
   return (
     <div className="container page-section">
+      {/* HEADER */}
+      <div style={{ borderBottom: '4px solid var(--ink)', paddingBottom: 32, marginBottom: 32 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'var(--blue)', marginBottom: 12 }}>
+          PROJECT / POSTED {formatRelativeDate(job.createdAt)?.toUpperCase()}
+        </div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(48px, 7vw, 96px)', lineHeight: 0.9, textTransform: 'uppercase', marginBottom: 20 }}>
+          {job.title}
+        </h1>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span className="badge">{job.category}</span>
+          <span className="badge">{job.experienceLevel || "Intermediate"}</span>
+          <span className="badge">{job.duration || "1-3 months"}</span>
+          <span className="badge" style={{ background: STATUS_COLORS[job.status], color: job.status === 'in-progress' ? 'var(--ink)' : 'var(--white)' }}>
+            {job.status?.toUpperCase()}
+          </span>
+        </div>
+      </div>
+
       <div className="two-column-grid">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Job Info Card */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* DESCRIPTION */}
           <div className="card-static">
-            <p style={{ color: "var(--nb-text-muted)", fontSize: 13, marginBottom: 10, fontWeight: 600, textTransform: 'uppercase' }}>
-              Posted {formatRelativeDate(job.createdAt)}
-            </p>
-            <h1 style={{ fontSize: 'clamp(28px, 4vw, 40px)', marginBottom: 14, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
-              {job.title}
-            </h1>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-              <span className="badge badge-blue">{job.category}</span>
-              <span className="badge">{job.experienceLevel || "Intermediate"}</span>
-              <span className="badge badge-purple">{job.duration || "1 to 3 months"}</span>
-              <span className={`badge ${statusBadge(job.status)}`}>{job.status}</span>
-            </div>
-            <p style={{ color: "var(--nb-text-secondary)", fontSize: 16, marginBottom: 24, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'var(--blue)', marginBottom: 8 }}>§ DESCRIPTION</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, textTransform: 'uppercase', marginBottom: 16 }}>Project Brief</h2>
+            <p style={{ fontFamily: 'var(--font-body)', color: "var(--ink)", fontSize: 16, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
               {job.description}
             </p>
             {job.skillsRequired?.length ? (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-                {job.skillsRequired.map((skill, i) => (
-                  <span key={skill} className={`badge ${['badge-lime', 'badge-orange', 'badge-blue', 'badge-pink', 'badge-purple'][i % 5]}`}>
-                    {skill}
-                  </span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 20, paddingTop: 20, borderTop: '3px solid var(--ink)' }}>
+                {job.skillsRequired.map((skill) => (
+                  <span key={skill} className="badge">{skill}</span>
                 ))}
               </div>
             ) : null}
           </div>
 
-          {/* Assigned Freelancer */}
+          {/* ASSIGNED FREELANCER */}
           {job.assignedFreelancer && (
-            <div className="card-static" style={{ background: 'var(--nb-lime)', color: '#08080A' }}>
-              <span className="badge badge-dark" style={{ marginBottom: 12 }}>✅ Assigned</span>
-              <Link to={`/users/${job.assignedFreelancer._id}`} style={{ textDecoration: 'none', color: '#08080A' }}>
-                <h3 style={{ fontSize: 22, marginBottom: 4, fontFamily: 'var(--font-heading)', textDecoration: 'underline', textDecorationThickness: 2, textUnderlineOffset: 3 }}>{job.assignedFreelancer.name}</h3>
+            <div className="card-static" style={{ background: 'var(--yellow)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>§ ASSIGNED</div>
+              <Link to={`/users/${job.assignedFreelancer._id}`}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 32, textTransform: 'uppercase', borderBottom: '3px solid var(--ink)', display: 'inline-block' }}>
+                  {job.assignedFreelancer.name}
+                </h3>
               </Link>
-              <p style={{ color: "var(--nb-text-secondary)" }}>
+              <p style={{ fontFamily: 'var(--font-body)', color: "var(--ink)", marginTop: 6, fontStyle: 'italic' }}>
                 {job.assignedFreelancer.profile?.title || "Freelancer"}
               </p>
             </div>
           )}
 
-          {/* Delivery Content */}
+          {/* DELIVERY */}
           {job.deliveryMessage && ["delivered", "completed"].includes(job.status) && (
-            <div className="card-static" style={{ background: 'var(--nb-lavender)', color: '#08080A' }}>
-              <span className="badge badge-purple" style={{ marginBottom: 12 }}>📦 Delivery</span>
-              <h3 style={{ fontSize: 20, marginBottom: 10, fontFamily: 'var(--font-heading)' }}>Delivered Work</h3>
-              <p style={{ color: 'rgba(26, 26, 46, 0.85)', whiteSpace: 'pre-wrap', lineHeight: 1.6, marginBottom: 12 }}>
+            <div className="card-static" style={{ background: 'var(--blue)', color: 'var(--white)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'var(--yellow)', marginBottom: 8 }}>§ DELIVERY</div>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 28, textTransform: 'uppercase', color: 'var(--white)', marginBottom: 14 }}>Delivered Work</h3>
+              <p style={{ fontFamily: 'var(--font-body)', color: 'rgba(255,255,255,0.9)', whiteSpace: 'pre-wrap', lineHeight: 1.6, marginBottom: 14 }}>
                 {job.deliveryMessage}
               </p>
               {job.deliveryLinks?.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {job.deliveryLinks.map((link, i) => (
-                    <a key={i} href={link} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: '2px solid #08080A', background: '#F5F0E8', color: '#08080A', fontWeight: 600, fontSize: 13, wordBreak: 'break-all' }}>
-                      🔗 {link}
+                    <a key={i} href={link} target="_blank" rel="noopener noreferrer" style={{
+                      padding: '10px 14px',
+                      border: '3px solid var(--white)',
+                      background: 'var(--ink)',
+                      color: 'var(--yellow)',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      fontSize: 12,
+                      wordBreak: 'break-all',
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.8,
+                    }}>
+                      → {link}
                     </a>
                   ))}
                 </div>
               )}
-              {job.deliveredAt && (
-                <p style={{ color: 'rgba(26, 26, 46, 0.7)', fontSize: 12, marginTop: 10 }}>Delivered {formatRelativeDate(job.deliveredAt)}</p>
-              )}
             </div>
           )}
 
-          {/* Revision Message */}
+          {/* REVISION */}
           {job.revisionMessage && job.status === "revision" && (
-            <div className="card-static" style={{ background: 'var(--nb-hot-pink)', color: 'var(--nb-white)' }}>
-              <span className="badge" style={{ background: 'var(--nb-white)', color: 'var(--nb-hot-pink)', marginBottom: 12 }}>🔄 Revision Requested</span>
-              <h3 style={{ fontSize: 20, marginBottom: 10, fontFamily: 'var(--font-heading)', color: 'var(--nb-white)' }}>Client Feedback</h3>
-              <p style={{ color: 'rgba(255,255,255,0.9)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                {job.revisionMessage}
+            <div className="card-static" style={{ background: 'var(--red)', color: 'var(--white)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'var(--yellow)', marginBottom: 8 }}>§ REVISION REQUESTED</div>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 28, textTransform: 'uppercase', color: 'var(--white)', marginBottom: 14 }}>Client Feedback</h3>
+              <p style={{ fontFamily: 'var(--font-body)', color: 'var(--white)', whiteSpace: 'pre-wrap', lineHeight: 1.6, fontStyle: 'italic' }}>
+                "{job.revisionMessage}"
               </p>
             </div>
           )}
 
-          {/* Proposal Form */}
+          {/* PROPOSAL FORM */}
           {showProposalForm && (
-            <form className="card-static" style={{ background: 'var(--nb-cream)' }} onSubmit={submitProposal}>
-              <span className="badge badge-pink" style={{ marginBottom: 16 }}>📝 Proposal</span>
-              <h2 style={{ fontSize: 26, marginBottom: 20, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>Submit Proposal</h2>
+            <form className="card-static" style={{ background: 'var(--paper)' }} onSubmit={submitProposal}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'var(--blue)', marginBottom: 8 }}>§ NEW PROPOSAL</div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 36, textTransform: 'uppercase', marginBottom: 24 }}>Submit Proposal</h2>
               <div style={{ marginBottom: 18 }}>
-                <label htmlFor="bidAmount" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
-                  Your price ($)
-                </label>
-                <input
-                  id="bidAmount"
-                  className="input-field"
-                  type="number"
-                  min="1"
-                  required
+                <label className="input-label" htmlFor="bidAmount">Your Price ($)</label>
+                <input id="bidAmount" className="input-field" type="number" min="1" required
                   value={proposal.bidAmount}
-                  onChange={(event) =>
-                    setProposal((current) => ({ ...current, bidAmount: event.target.value }))
-                  }
-                />
+                  onChange={(e) => setProposal((c) => ({ ...c, bidAmount: e.target.value }))} />
               </div>
               <div style={{ marginBottom: 18 }}>
-                <label htmlFor="deliveryTime" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
-                  Delivery time
-                </label>
-                <select
-                  id="deliveryTime"
-                  className="input-field"
+                <label className="input-label" htmlFor="deliveryTime">Delivery Time</label>
+                <select id="deliveryTime" className="input-field"
                   value={proposal.deliveryTime}
-                  onChange={(event) =>
-                    setProposal((current) => ({ ...current, deliveryTime: event.target.value }))
-                  }
-                >
+                  onChange={(e) => setProposal((c) => ({ ...c, deliveryTime: e.target.value }))}>
                   <option>Less than 1 week</option>
                   <option>1 week</option>
                   <option>2 weeks</option>
@@ -317,132 +291,70 @@ const JobDetails = () => {
                 </select>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <label htmlFor="coverLetter" style={{ display: "block", marginBottom: 8, fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
-                  Cover letter
-                </label>
-                <textarea
-                  id="coverLetter"
-                  className="input-field"
-                  rows="7"
-                  required
+                <label className="input-label" htmlFor="coverLetter">Cover Letter</label>
+                <textarea id="coverLetter" className="input-field" rows="6" required
                   value={proposal.coverLetter}
-                  onChange={(event) =>
-                    setProposal((current) => ({ ...current, coverLetter: event.target.value }))
-                  }
-                  style={{ resize: "vertical" }}
-                />
+                  onChange={(e) => setProposal((c) => ({ ...c, coverLetter: e.target.value }))} />
               </div>
               <div style={{ display: "flex", gap: 12 }}>
-                <Button type="button" variant="outline" onClick={() => setShowProposalForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Submitting..." : "Send Proposal →"}
-                </Button>
+                <Button type="submit" disabled={submitting}>{submitting ? "Submitting..." : "Send Proposal →"}</Button>
+                <Button type="button" variant="outline" onClick={() => setShowProposalForm(false)}>Cancel</Button>
               </div>
             </form>
           )}
 
-          {/* Client: Incoming Proposals */}
+          {/* INCOMING PROPOSALS */}
           {isOwner && (
             <div className="card-static">
-              <span className="badge badge-orange" style={{ marginBottom: 16 }}>📋 Proposals</span>
-              <h2 style={{ fontSize: 28, marginBottom: 8, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>
-                Incoming Proposals
-              </h2>
-              <p style={{ color: "var(--nb-text-secondary)", fontSize: 14, marginBottom: 20 }}>
-                Review applicants and accept one to start delivery.
-              </p>
-
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'var(--blue)', marginBottom: 8 }}>§ INCOMING ({bids.length})</div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 36, textTransform: 'uppercase', marginBottom: 20 }}>Proposals</h2>
               {bids.length === 0 ? (
-                <p style={{ color: "var(--nb-text-secondary)", padding: 24, background: 'var(--nb-cream)', border: 'var(--nb-border-thin)', textAlign: 'center' }}>
+                <p style={{ fontFamily: 'var(--font-body)', color: 'var(--muted)', padding: 24, border: '3px solid var(--ink)', background: 'var(--paper)', textAlign: 'center', fontStyle: 'italic' }}>
                   No proposals yet. Freelancers will appear here once they pitch.
                 </p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {bids.map((bid) => (
-                    <div key={bid._id} className="card" style={{ background: 'var(--nb-cream)' }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                    <div key={bid._id} style={{ padding: 20, border: '3px solid var(--ink)', background: 'var(--white)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
                         <div style={{ flex: 1, minWidth: 260 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                             <div style={{
-                              width: 44,
-                              height: 44,
-                              border: 'var(--nb-border)',
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontWeight: 800,
-                              background: 'var(--nb-yellow)',
-                              fontSize: 16,
-                            }}>
-                              {getUserInitials(bid.freelancer?.name)}
-                            </div>
+                              width: 44, height: 44, borderRadius: '50%',
+                              border: '3px solid var(--ink)',
+                              background: 'var(--yellow)',
+                              display: 'grid', placeItems: 'center',
+                              fontFamily: 'var(--font-display)', fontSize: 18,
+                            }}>{getUserInitials(bid.freelancer?.name)}</div>
                             <div>
                               <Link to={`/users/${bid.freelancer?._id}`}>
-                                <h3 style={{ fontSize: 18, fontFamily: 'var(--font-heading)', textDecoration: 'underline', textDecorationThickness: 2, textUnderlineOffset: 3 }}>{bid.freelancer?.name}</h3>
+                                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, textTransform: 'uppercase', borderBottom: '3px solid var(--ink)', display: 'inline-block' }}>
+                                  {bid.freelancer?.name}
+                                </h3>
                               </Link>
-                              <p style={{ color: "var(--nb-text-secondary)", fontSize: 13 }}>
-                                {bid.freelancer?.profile?.title || "Freelancer"}
+                              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: "var(--muted)", textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 }}>
+                                {bid.freelancer?.profile?.title || "FREELANCER"}
                               </p>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                                <span style={{ color: 'var(--nb-yellow)', fontSize: 13, letterSpacing: 1 }}>
-                                  {"★".repeat(Math.round(bid.freelancer?.rating || 0))}{"☆".repeat(5 - Math.round(bid.freelancer?.rating || 0))}
-                                </span>
-                                {bid.freelancer?.numReviews > 0 && (
-                                  <span style={{ fontSize: 11, color: 'var(--nb-text-muted)', fontWeight: 600 }}>
-                                    {bid.freelancer.rating.toFixed(1)} ({bid.freelancer.numReviews} review{bid.freelancer.numReviews !== 1 ? 's' : ''})
-                                  </span>
-                                )}
-                              </div>
                             </div>
                           </div>
-                          <p style={{ color: "var(--nb-text-secondary)", marginBottom: 10, whiteSpace: "pre-wrap", fontSize: 14 }}>
+                          <p style={{ fontFamily: 'var(--font-body)', color: "var(--muted)", marginBottom: 10, whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.6 }}>
                             {bid.proposal}
                           </p>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            {bid.freelancer?.profile?.skills?.slice(0, 4).map((skill, i) => (
-                              <span key={skill} className={`badge ${['badge-blue', 'badge-lime', 'badge-purple', 'badge-orange'][i % 4]}`} style={{ fontSize: 11, padding: '3px 8px' }}>
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
                         </div>
-
-                        <div style={{ width: 200 }}>
-                          <p style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, fontFamily: 'var(--font-display)' }}>
-                            {formatCurrency(bid.amount)}
-                          </p>
-                          <p style={{ color: "var(--nb-text-secondary)", marginBottom: 6, fontSize: 13 }}>
-                            📦 Delivery: {bid.deliveryTime}
-                          </p>
-                          <p style={{ marginBottom: 14, fontSize: 13 }}>
-                            <span className={`badge ${bid.status === 'accepted' ? 'badge-green' : ''}`} style={{ fontSize: 11, padding: '3px 8px' }}>
-                              {bid.status}
-                            </span>
+                        <div style={{ width: 180 }}>
+                          <p style={{ fontFamily: 'var(--font-display)', fontSize: 32, lineHeight: 1, marginBottom: 6 }}>{formatCurrency(bid.amount)}</p>
+                          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 14 }}>
+                            DELIVERY: {bid.deliveryTime?.toUpperCase()}
                           </p>
                           {bid.status === "pending" && job.status === "open" ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                              <Button style={{ width: "100%" }} size="small" onClick={() => acceptBid(bid._id)}>
-                                ✅ Accept
-                              </Button>
-                              <Button
-                                variant="outline"
-                                style={{ width: "100%" }}
-                                size="small"
-                                onClick={() => rejectBid(bid._id)}
-                              >
-                                ✕ Reject
-                              </Button>
-                              <Button
-                                variant="outline"
-                                style={{ width: "100%" }}
-                                size="small"
-                                onClick={() => messageFreelancer(bid)}
-                              >
-                                💬 Message
-                              </Button>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <Button size="sm" style={{ width: "100%" }} onClick={() => acceptBid(bid._id)}>✓ Accept</Button>
+                              <Button variant="outline" size="sm" style={{ width: "100%" }} onClick={() => rejectBid(bid._id)}>✕ Reject</Button>
+                              <Button variant="ghost" size="sm" style={{ width: "100%" }} onClick={() => messageFreelancer(bid)}>Message</Button>
                             </div>
-                          ) : null}
+                          ) : (
+                            <span className="badge" style={{ background: STATUS_COLORS[bid.status] || 'var(--ink)', color: 'var(--white)' }}>{bid.status?.toUpperCase()}</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -453,22 +365,17 @@ const JobDetails = () => {
           )}
         </div>
 
-        {/* Sidebar */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Budget Card */}
-          <div className="card-static" style={{ background: 'var(--nb-yellow)', color: '#08080A' }}>
-            <label style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.5px', color: 'rgba(26, 26, 46, 0.7)' }}>
-              Budget
-            </label>
-            <h2 style={{ fontSize: 36, marginBottom: 14, fontFamily: 'var(--font-display)' }}>
+        {/* SIDEBAR */}
+        <div style={{ position: 'sticky', top: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="card-static" style={{ background: 'var(--yellow)' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2 }}>BUDGET</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 56, lineHeight: 1, margin: '8px 0' }}>
               {job.budgetType === "hourly" && (job.budgetMin || job.budgetMax)
-                ? `${formatCurrency(job.budgetMin || job.budget)} - ${formatCurrency(
-                    job.budgetMax || job.budget
-                  )}/hr`
+                ? `${formatCurrency(job.budgetMin || job.budget)}–${formatCurrency(job.budgetMax || job.budget)}/HR`
                 : formatCurrency(job.budget)}
-            </h2>
-            <p style={{ color: "rgba(26, 26, 46, 0.85)", marginBottom: 20, fontWeight: 600 }}>
-              📋 {job.bidsCount || 0} proposal{job.bidsCount === 1 ? "" : "s"} received
+            </div>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 20, paddingBottom: 16, borderBottom: '3px solid var(--ink)' }}>
+              {job.bidsCount || 0} PROPOSAL{job.bidsCount === 1 ? "" : "S"} RECEIVED
             </p>
 
             {!isOwner && user?.role !== "client" ? (
@@ -477,78 +384,53 @@ const JobDetails = () => {
                   onClick={() => setShowProposalForm(true)}
                   disabled={Boolean(myBid) || job.status !== "open"}
                   variant="dark"
-                  style={{ width: "100%" }}
-                >
+                  style={{ width: "100%" }}>
                   {myBid ? `Proposal ${myBid.status}` : "Submit Proposal →"}
                 </Button>
                 {myBid && myBid.status === "pending" && (
-                  <Button variant="outline" onClick={withdrawBid} style={{ width: "100%" }}>
-                    ✕ Withdraw Proposal
-                  </Button>
+                  <Button variant="outline" onClick={withdrawBid} style={{ width: "100%" }}>Withdraw</Button>
                 )}
-                <Button variant="outline" onClick={startChat} style={{ width: "100%" }}>
-                  💬 Message Client
-                </Button>
+                <Button variant="outline" onClick={startChat} style={{ width: "100%" }}>Message Client</Button>
               </div>
             ) : null}
 
             {isOwner ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <Button
-                  variant="outline"
-                  disabled={updatingStatus || job.status === "completed"}
-                  onClick={() => updateStatus("completed")}
-                  style={{ width: "100%" }}
-                >
-                  ✅ Mark Completed
+                <Button variant="dark" disabled={updatingStatus || job.status === "completed"} onClick={() => updateStatus("completed")} style={{ width: "100%" }}>
+                  ✓ Mark Completed
                 </Button>
-                <Button
-                  variant="danger"
-                  disabled={updatingStatus || job.status === "cancelled"}
-                  onClick={() => updateStatus("cancelled")}
-                  style={{ width: "100%" }}
-                >
+                <Button variant="danger" disabled={updatingStatus || job.status === "cancelled"} onClick={() => updateStatus("cancelled")} style={{ width: "100%" }}>
                   ✕ Cancel Project
                 </Button>
               </div>
             ) : null}
           </div>
 
-          {/* Client Card */}
+          {/* CLIENT CARD */}
           <div className="card-static">
-            <label style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700, fontFamily: 'var(--font-heading)', letterSpacing: '0.5px', color: 'var(--nb-text-muted)', marginBottom: 12, display: 'block' }}>
-              Client
-            </label>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              <div
-                style={{
-                  width: 52,
-                  height: 52,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "var(--nb-lime)",
-                  border: "var(--nb-border)",
-                  fontWeight: 800,
-                  fontSize: 18,
-                  boxShadow: 'var(--nb-shadow-sm)',
-                }}
-              >
-                {getUserInitials(job.client?.name)}
-              </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'var(--blue)', marginBottom: 12 }}>CLIENT</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: '50%',
+                border: '3px solid var(--ink)',
+                background: 'var(--blue)',
+                color: 'var(--white)',
+                display: 'grid', placeItems: 'center',
+                fontFamily: 'var(--font-display)', fontSize: 20,
+              }}>{getUserInitials(job.client?.name)}</div>
               <div>
                 <Link to={`/users/${job.client?._id}`}>
-                  <h3 style={{ fontSize: 20, fontFamily: 'var(--font-heading)', textDecoration: 'underline', textDecorationThickness: 2, textUnderlineOffset: 3 }}>{job.client?.name}</h3>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, textTransform: 'uppercase', borderBottom: '3px solid var(--ink)', display: 'inline-block' }}>
+                    {job.client?.name}
+                  </h3>
                 </Link>
-                <p style={{ color: "var(--nb-text-secondary)", fontSize: 14 }}>
+                <p style={{ fontFamily: 'var(--font-body)', color: "var(--muted)", fontSize: 13, fontStyle: 'italic' }}>
                   {job.client?.profile?.title || "Marketplace client"}
                 </p>
               </div>
             </div>
-            <p style={{ color: "var(--nb-text-secondary)", marginBottom: 8, fontSize: 14 }}>
-              {job.client?.profile?.bio || "This client has not filled out a company bio yet."}
-            </p>
-            <p style={{ color: "var(--nb-text-muted)", fontSize: 13 }}>
-              ✉ {job.client?.email}
+            <p style={{ fontFamily: 'var(--font-body)', color: "var(--muted)", fontSize: 14, lineHeight: 1.5 }}>
+              {job.client?.profile?.bio || "No bio yet."}
             </p>
           </div>
         </div>

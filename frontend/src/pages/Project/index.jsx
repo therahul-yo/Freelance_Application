@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Button from "../../components/Button";
+import { JobRowSkeleton } from "../../components/Skeleton";
 
 const CATEGORIES = [
   "All Categories",
@@ -19,12 +20,14 @@ const Projects = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [activeTab, setActiveTab] = useState("best");
 
-  // Redirect clients - they should not browse jobs (they post them)
   useEffect(() => {
     if (user?.role === "client") {
       toast.info("Go to Dashboard to manage your job postings");
@@ -32,27 +35,24 @@ const Projects = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
+  useEffect(() => { fetchJobs(1); }, [selectedCategory]);
 
-  const fetchJobs = async () => {
+  const fetchJobs = async (p = page) => {
+    setLoading(true);
     try {
-      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects`);
-      setJobs(data);
-    } catch (error) {
-      console.error("Error fetching jobs:", error);
-    } finally {
-      setLoading(false);
-    }
+      const params = new URLSearchParams({ page: p, limit: 20 });
+      if (selectedCategory !== "All Categories") params.append("category", selectedCategory);
+      if (searchQuery.trim()) params.append("search", searchQuery.trim());
+      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/projects?${params}`);
+      const list = Array.isArray(data) ? data : (data.projects || []);
+      setJobs(list);
+      setTotal(Array.isArray(data) ? data.length : (data.total || 0));
+      setTotalPages(Array.isArray(data) ? 1 : (data.totalPages || 1));
+      setPage(Array.isArray(data) ? 1 : (data.page || 1));
+    } catch {
+      toast.error("Could not load jobs");
+    } finally { setLoading(false); }
   };
-
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         job.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All Categories" || job.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -60,39 +60,27 @@ const Projects = () => {
     const diff = now - date;
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(hours / 24);
-    
-    if (hours < 1) return "Just now";
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
+    if (hours < 1) return "JUST NOW";
+    if (hours < 24) return `${hours}H AGO`;
+    if (days < 7) return `${days}D AGO`;
     return date.toLocaleDateString();
   };
 
-  // Don't render for clients
   if (user?.role === "client") return null;
 
   return (
     <div className="browse-layout">
-      {/* Sidebar Filters */}
+      {/* SIDEBAR */}
       <aside className="browse-sidebar">
-        <h3 className="browse-sidebar-title">🎯 Find Jobs</h3>
-        
-        {/* Category Filter */}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: 'var(--blue)', marginBottom: 6 }}>
+          § FILTERS
+        </div>
+        <h3 className="browse-sidebar-title">Find Jobs</h3>
         <div>
-          <label style={{ 
-            display: 'block', 
-            marginBottom: 14, 
-            fontFamily: 'var(--font-heading)',
-            fontWeight: 700,
-            fontSize: 12,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            color: 'var(--nb-text-muted)',
-          }}>
-            Category
-          </label>
+          <label className="input-label">Category</label>
           {CATEGORIES.map(cat => (
-            <div 
-              key={cat} 
+            <div
+              key={cat}
               className={`category-option ${selectedCategory === cat ? 'active' : ''}`}
               onClick={() => setSelectedCategory(cat)}
             >
@@ -105,108 +93,103 @@ const Projects = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* MAIN */}
       <main className="browse-main">
-        {/* Search Bar */}
-        <div className="browse-search">
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(48px, 7vw, 80px)', lineHeight: 0.9, textTransform: 'uppercase', marginBottom: 24 }}>
+          Find <span style={{ background: 'var(--yellow)', padding: '0 12px', border: '4px solid var(--ink)' }}>Work</span>
+        </h1>
+
+        <div className="browse-search" style={{ marginBottom: 24, display: 'flex', gap: 0, alignItems: 'stretch' }}>
           <input
             type="text"
-            placeholder="🔍 Search for jobs..."
+            placeholder="SEARCH JOBS..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && fetchJobs(1)}
             className="input-field"
-            style={{ maxWidth: "500px", fontSize: "15px" }}
+            style={{ flex: 1, boxShadow: 'none', fontSize: 14 }}
           />
+          <Button onClick={() => fetchJobs(1)} style={{ marginLeft: -4, boxShadow: 'none' }}>Search</Button>
         </div>
 
-        {/* Tabs */}
-        <div className="neo-tabs" style={{ marginBottom: 24, display: 'inline-flex' }}>
-          <button 
-            className={`neo-tab ${activeTab === "best" ? 'active' : ''}`}
-            onClick={() => setActiveTab("best")}
-          >
+        <div className="neo-tabs" style={{ marginBottom: 24 }}>
+          <button className={`neo-tab ${activeTab === "best" ? 'active' : ''}`} onClick={() => setActiveTab("best")}>
             ★ Best Matches
           </button>
-          <button 
-            className={`neo-tab ${activeTab === "recent" ? 'active' : ''}`}
-            onClick={() => setActiveTab("recent")}
-          >
-            🕐 Most Recent
+          <button className={`neo-tab ${activeTab === "recent" ? 'active' : ''}`} onClick={() => setActiveTab("recent")}>
+            ↻ Most Recent
           </button>
         </div>
 
-        {/* Results Count */}
-        <p style={{ fontSize: 13, color: "var(--nb-text-muted)", marginBottom: 20, fontWeight: 600 }}>
-          {loading ? (
-            <span className="neo-loading">Loading...</span>
-          ) : `${filteredJobs.length} jobs available`}
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>
+          {loading ? "// LOADING..." : `// ${total} JOBS AVAILABLE`}
         </p>
 
-        {/* No Jobs Message */}
-        {!loading && filteredJobs.length === 0 && (
-          <div className="card-static" style={{ textAlign: "center", padding: "60px 20px", background: 'var(--nb-cream)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
-            <h3 style={{ marginBottom: 8, fontFamily: 'var(--font-heading)' }}>No jobs found</h3>
-            <p style={{ color: "var(--nb-text-secondary)" }}>
-              Check back later for new opportunities
-            </p>
+        {loading && (
+          <div>
+            <JobRowSkeleton />
+            <JobRowSkeleton />
+            <JobRowSkeleton />
           </div>
         )}
 
-        {/* Job Listings */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {filteredJobs.map((job) => (
-            <div key={job._id} className="job-listing">
-              {/* Posted Time */}
-              <p className="job-listing-time">
-                Posted {formatDate(job.createdAt)}
-              </p>
+        {!loading && jobs.length === 0 && (
+          <div className="card-static" style={{ textAlign: "center", padding: "60px 20px" }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 80, opacity: 0.2 }}>—</div>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 32, textTransform: 'uppercase', marginBottom: 8 }}>No Jobs Found</h3>
+            <p style={{ fontFamily: 'var(--font-body)', color: "var(--muted)" }}>Check back later for new opportunities.</p>
+          </div>
+        )}
 
-              {/* Title */}
-              <Link to={`/jobs/${job._id}`}>
-                <h3 className="job-listing-title">{job.title}</h3>
-              </Link>
-
-              {/* Job Meta */}
-              <div className="job-listing-meta">
-                <span style={{ fontWeight: 700 }}>
-                  {job.budgetType === "hourly" 
-                    ? `$${job.budgetMin || job.budget} - $${job.budgetMax || job.budget}/hr`
-                    : `Fixed: $${job.budget?.toLocaleString()}`
-                  }
-                </span>
-                <span>•</span>
-                <span>{job.experienceLevel || "Intermediate"}</span>
-                <span>•</span>
-                <span>{job.duration || "1-3 months"}</span>
-              </div>
-
-              {/* Description */}
-              <p style={{ fontSize: 14, color: "var(--nb-text-secondary)", lineHeight: "1.6", marginBottom: 14 }}>
-                {job.description.length > 250 ? job.description.substring(0, 250) + "..." : job.description}
-              </p>
-
-              {/* Skills */}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-                {job.skillsRequired?.map((skill, i) => (
-                  <span key={skill} className={`badge ${['badge-blue', 'badge-purple', 'badge-lime', 'badge-orange', 'badge-pink'][i % 5]}`} style={{ fontSize: 11, padding: '4px 10px' }}>
-                    {skill}
-                  </span>
-                ))}
-              </div>
-
-              {/* Actions */}
-              <div className="job-listing-actions">
-                <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 12, color: "var(--nb-text-muted)", fontWeight: 600 }}>
-                  <span>📋 Proposals: {job.bidsCount || 0}</span>
-                </div>
+        {!loading && jobs.length > 0 && (
+          <div style={{ borderTop: '4px solid var(--ink)' }}>
+            {jobs.map((job) => (
+              <div key={job._id} className="job-row job-listing">
+                <p className="job-listing-time">POSTED {formatDate(job.createdAt)}</p>
                 <Link to={`/jobs/${job._id}`}>
-                  <Button size="small">Apply Now →</Button>
+                  <h3 className="job-listing-title">{job.title}</h3>
                 </Link>
+                <div className="job-listing-meta">
+                  <span style={{ fontWeight: 700 }}>
+                    {job.budgetType === "hourly"
+                      ? `$${job.budgetMin || job.budget} – $${job.budgetMax || job.budget}/HR`
+                      : `FIXED · $${job.budget?.toLocaleString()}`}
+                  </span>
+                  <span>·</span>
+                  <span>{(job.experienceLevel || "Intermediate").toUpperCase()}</span>
+                  <span>·</span>
+                  <span>{(job.duration || "1-3 months").toUpperCase()}</span>
+                </div>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: "var(--muted)", lineHeight: 1.6, marginBottom: 14, maxWidth: 720 }}>
+                  {job.description.length > 250 ? job.description.substring(0, 250) + "..." : job.description}
+                </p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+                  {job.skillsRequired?.map((skill) => (
+                    <span key={skill} className="badge">{skill}</span>
+                  ))}
+                </div>
+                <div className="job-listing-actions">
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: "var(--muted)", textTransform: 'uppercase', letterSpacing: 1 }}>
+                    {job.bidsCount || 0} PROPOSALS
+                  </span>
+                  <Link to={`/jobs/${job._id}`}>
+                    <Button size="sm">Apply Now →</Button>
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 32, justifyContent: "center" }}>
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => fetchJobs(page - 1)}>← Prev</Button>
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>
+              {page} / {totalPages}
+            </span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => fetchJobs(page + 1)}>Next →</Button>
+          </div>
+        )}
       </main>
     </div>
   );

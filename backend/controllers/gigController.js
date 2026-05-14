@@ -10,9 +10,9 @@ const populateGig = (query) =>
 // @access  Public
 const getGigs = async (req, res) => {
   try {
-    const { category, search, freelancerId } = req.query;
+    const { category, search, freelancerId, page = 1, limit = 20 } = req.query;
     let query = { status: "active" };
-    
+
     if (category && category !== "All") {
       query.category = category;
     }
@@ -20,7 +20,7 @@ const getGigs = async (req, res) => {
     if (freelancerId) {
       query.freelancer = freelancerId;
     }
-    
+
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: "i" } },
@@ -29,8 +29,21 @@ const getGigs = async (req, res) => {
       ];
     }
 
-    const gigs = await populateGig(Gig.find(query).sort({ createdAt: -1 }));
-    res.json(gigs);
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [gigs, total] = await Promise.all([
+      populateGig(Gig.find(query).sort({ createdAt: -1 }).skip(skip).limit(limitNum)),
+      Gig.countDocuments(query),
+    ]);
+
+    res.json({
+      gigs,
+      page: pageNum,
+      totalPages: Math.ceil(total / limitNum),
+      total,
+    });
   } catch (error) {
     res.status(400);
     throw new Error(error.message);

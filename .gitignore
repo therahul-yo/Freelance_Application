@@ -42,3 +42,5 @@ skills/
 mempalace.yaml
 entities.json
 verify_task*.js
+.vercel
+.env*.local

@@ -8,15 +8,17 @@ import connectDB from "./config/db.js";
 
 dotenv.config();
 
-// Connect to Database
 connectDB();
 
 const app = express();
 const server = http.createServer(app);
+
+const envOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : [];
 const allowedOrigins = [
   process.env.CLIENT_URL || "http://localhost:5173",
-  "https://freelance-application.vercel.app",
-  "https://freelance-application-coral.vercel.app",
+  ...envOrigins,
 ];
 
 const io = new Server(server, {
@@ -67,10 +69,7 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
-// Socket.io Connection
 io.on("connection", (socket) => {
-  console.log("Connected to socket.io");
-
   socket.on("setup", (userData) => {
     socket.join(userData._id);
     socket.emit("connected");
@@ -78,26 +77,20 @@ io.on("connection", (socket) => {
 
   socket.on("join chat", (room) => {
     socket.join(room);
-    console.log("User Joined Room: " + room);
   });
 
   socket.on("typing", (room) => socket.in(room).emit("typing"));
   socket.on("stop typing", (room) => socket.in(room).emit("stop typing"));
 
-  socket.on("new message", (newMessageRecieved) => {
-    var chat = newMessageRecieved.chat;
+  socket.on("new message", (newMessageReceived) => {
+    const chat = newMessageReceived.chat;
 
-    if (!chat.users) return console.log("chat.users not defined");
+    if (!chat?.users) return;
 
     chat.users.forEach((user) => {
-      if (user._id == newMessageRecieved.sender._id) return;
-
-      socket.in(user._id).emit("message recieved", newMessageRecieved);
+      if (user._id.toString() === newMessageReceived.sender._id.toString()) return;
+      socket.in(user._id).emit("message received", newMessageReceived);
     });
-  });
-
-  socket.on("disconnect", () => {
-    console.log("USER DISCONNECTED");
   });
 });
 
@@ -106,7 +99,4 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
-
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+server.listen(PORT);

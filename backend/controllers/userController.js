@@ -178,16 +178,21 @@ const updateUserProfile = async (req, res) => {
 // @route   GET /api/users?search=rahul
 // @access  Private
 const allUsers = async (req, res) => {
-  const keyword = req.query.search
-    ? {
-        $or: [
-          { name: { $regex: req.query.search, $options: "i" } },
-          { email: { $regex: req.query.search, $options: "i" } },
-        ],
-      }
-    : {};
+  if (!req.query.search?.trim()) {
+    return res.json([]);
+  }
 
-  const users = await User.find(keyword).find({ _id: { $ne: req.user._id } });
+  const keyword = {
+    $or: [
+      { name: { $regex: req.query.search.trim(), $options: "i" } },
+    ],
+  };
+
+  const users = await User.find(keyword)
+    .find({ _id: { $ne: req.user._id } })
+    .select("name role profile rating numReviews")
+    .limit(20);
+
   res.send(users);
 };
 

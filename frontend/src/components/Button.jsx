@@ -1,22 +1,44 @@
 import React from 'react';
 
-const Button = ({ children, variant = 'primary', className = '', size = '', style = {}, ...rest }) => {
+/**
+ * Industrial Brutalism Button
+ * Variants: primary (yellow), outline, danger (red), dark (black), ghost
+ * Size: sm, md, lg
+ */
+const Button = ({
+  children,
+  variant = 'primary',
+  className = '',
+  size = 'md',
+  style = {},
+  ...rest
+}) => {
   const variantMap = {
     primary: 'btn-primary',
     outline: 'btn-outline',
-    danger: 'btn-danger',
-    blue: 'btn-blue',
-    green: 'btn-green',
-    dark: 'btn-dark',
+    danger:  'btn-danger',
+    dark:    'btn-dark',
+    blue:    'btn-blue',
+    green:   'btn-green',
+    ghost:   'btn-ghost',
   };
 
-  const sizeStyles = size === 'small' ? { padding: '8px 16px', fontSize: '12px' } : {};
-  
+  const sizeMap = {
+    sm: 'btn-sm',
+    small: 'btn-sm',
+    md: 'btn-md',
+    medium: 'btn-md',
+    lg: 'btn-lg',
+    large: 'btn-lg',
+  };
+
   const variantClass = variantMap[variant] || 'btn-primary';
-  const combinedClassName = `btn-neo ${variantClass} ${className}`.trim();
-  
+  const sizeClass = sizeMap[size] || 'btn-md';
+
+  const combinedClassName = `btn btn-neo ${variantClass} ${sizeClass} ${className}`.trim();
+
   return (
-    <button className={combinedClassName} style={{ ...sizeStyles, ...style }} {...rest}>
+    <button className={combinedClassName} style={style} {...rest}>
       {children}
     </button>
   );
