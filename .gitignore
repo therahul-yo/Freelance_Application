@@ -33,6 +33,10 @@ Thumbs.db
 # Misc
 *.log
 .cache/
+.playwright-mcp/
+redesign-*.png
+*.png
+.claude/
 
 # Legacy folders (not part of main app)
 socket/
