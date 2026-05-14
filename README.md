@@ -1,168 +1,193 @@
 # Smith Works
 
-A full-stack freelance marketplace connecting clients with skilled professionals. Built with the MERN stack and real-time communication.
+A full-stack freelance marketplace connecting clients with skilled professionals. Built with the MERN stack, real-time messaging, and an Industrial Newspaper Brutalism design.
 
 ![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=nodedotjs&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?style=flat&logo=socketdotio&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)
+![Render](https://img.shields.io/badge/Render-46E3B7?style=flat&logo=render&logoColor=black)
+
+## Live Demo
+
+- **Frontend:** Vercel — `freelance-application-*.vercel.app`
+- **Backend API:** Render — `https://freelance-application.onrender.com`
 
 ## Features
 
-### For Clients (Hirers)
-- ✅ Post jobs with budget, skills, and requirements
-- ✅ Browse freelancer gigs and services
-- ✅ Real-time chat with freelancers
-- ✅ Review and accept proposals
-- ✅ Role-based dashboard
+### For Clients
+- Post jobs with budget, skills, and experience requirements
+- Browse freelancer gig storefronts
+- Review and accept proposals
+- Real-time chat with freelancers
+- Role-based dashboard with proposal tracking
 
-### For Freelancers (Workers)
-- ✅ Create gigs to showcase skills and services
-- ✅ Browse and apply to job postings
-- ✅ Submit proposals with custom pricing
-- ✅ Real-time messaging with clients
-- ✅ Track proposal status
+### For Freelancers
+- Create gig listings to showcase services
+- Browse and apply to open job postings
+- Submit proposals with custom pricing
+- Real-time messaging with clients
+- Track proposal and project status
 
-### Technical Features
-- 🔐 JWT cookie-based authentication
-- 💬 Real-time messaging with Socket.IO
-- 🔔 Real-time notifications system
-- 🎨 Ambitious Neo-Brutalism UI Design
-- 📱 Responsive design
-- 🔄 RESTful API architecture
+### Technical
+- JWT authentication via HTTP-only cookies (30-day expiry)
+- Real-time messaging and notifications with Socket.IO
+- Paginated API responses for projects and gigs
+- Rate limiting on auth endpoints (20 req / 15 min)
+- Role-based access control (client / freelancer / admin)
+- SPA routing on Vercel via `vercel.json` rewrites
+- CORS configured for all `*.vercel.app` origins
 
 ## Tech Stack
 
-| Frontend | Backend | Database |
-|----------|---------|----------|
-| React 19 | Node.js | MongoDB |
-| React Router | Express.js | Mongoose |
-| Axios | Socket.IO | |
-| React Toastify | JWT | |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, React Router, Axios, Vite |
+| Backend | Node.js, Express 5, Socket.IO |
+| Database | MongoDB, Mongoose |
+| Auth | JWT, HTTP-only cookies |
+| Hosting | Vercel (frontend), Render (backend) |
+
+## Design
+
+Industrial Newspaper Brutalism — thick black borders, offset box shadows, zero border-radius, uppercase type.
+
+- **Display font:** Bebas Neue
+- **UI / mono font:** IBM Plex Mono
+- **Body font:** Fraunces
+- **Palette:** `#F2EFE9` paper · `#FFE500` yellow · `#0047FF` blue · `#FF2D55` red · `#0A0A0A` ink
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- MongoDB (local or Atlas)
+- MongoDB Atlas URI
 
-### Installation
+### Backend setup
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/therahul-yo/Freelance_Application.git
-cd Freelance_Application
-```
-
-2. **Setup Backend**
 ```bash
 cd backend
 npm install
+cp .env.example .env   # fill in your values
+npm start
 ```
 
-Create `.env` file:
+Required env vars (see `backend/.env.example`):
+
 ```env
-PORT=5001
-MONGO_URI=mongodb://127.0.0.1:27017/smithworks
-JWT_SECRET=your_jwt_secret_here
 NODE_ENV=development
+PORT=5001
+MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/smithworks
+JWT_SECRET=your_jwt_secret_here
+CLIENT_URL=http://localhost:5173
 ```
 
-3. **Setup Frontend**
+### Frontend setup
+
 ```bash
 cd frontend
 npm install
 ```
 
-4. **Run the Application**
+Create `frontend/.env.local`:
 
-Terminal 1 - Backend:
+```env
+VITE_API_URL=http://localhost:5001/api
+VITE_SOCKET_URL=http://localhost:5001
+```
+
+Then run:
+
 ```bash
-cd backend
 npm run dev
 ```
 
-Terminal 2 - Frontend:
-```bash
-cd frontend
-npm run dev
-```
-
-5. **Open in browser**
-```
-http://localhost:5173
-```
+Open `http://localhost:5173`.
 
 ## Project Structure
 
 ```
-smith-works/
+SmithWorks/
 ├── backend/
+│   ├── config/          # DB connection
 │   ├── controllers/     # Route handlers
-│   ├── models/          # MongoDB schemas
+│   ├── middleware/      # Auth + rate limiting
+│   ├── models/          # Mongoose schemas
 │   ├── routes/          # API routes
-│   ├── middleware/      # Auth middleware
-│   └── server.js        # Entry point
-├── frontend/
-│   ├── src/
-│   │   ├── components/  # Reusable components
-│   │   ├── context/     # React context (Auth, Chat)
-│   │   ├── pages/       # Page components
-│   │   └── App.jsx      # Main app
-│   └── index.html
-└── README.md
+│   ├── utils/           # Token generation
+│   ├── .env.example
+│   └── server.js
+└── frontend/
+    ├── src/
+    │   ├── components/  # Button, Input, Navbar, Skeleton, etc.
+    │   ├── context/     # AuthContext, ChatContext, NotificationContext
+    │   ├── lib/         # Axios instance
+    │   ├── pages/       # Auth, Chat, Dashboard, Gig, Project, Profile
+    │   ├── utils/       # Formatters
+    │   ├── App.jsx      # Routes + Landing page
+    │   ├── App.css      # Component styles
+    │   └── index.css    # Design system tokens + global styles
+    └── vercel.json      # SPA rewrite rule
 ```
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/users` - Register
-- `POST /api/users/auth` - Login
-- `POST /api/users/logout` - Logout
-- `GET /api/users/profile` - Get profile
+### Auth / Users
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/users` | Register |
+| POST | `/api/users/auth` | Login |
+| POST | `/api/users/logout` | Logout |
+| GET | `/api/users/profile` | Get own profile |
 
 ### Projects (Jobs)
-- `GET /api/projects` - Get all jobs
-- `GET /api/projects/:id` - Get job by ID
-- `POST /api/projects` - Create job (Client)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/projects` | List jobs (paginated) |
+| GET | `/api/projects/:id` | Job detail |
+| POST | `/api/projects` | Post a job (client) |
 
 ### Gigs
-- `GET /api/gigs` - Get all gigs
-- `GET /api/gigs/:id` - Get gig by ID
-- `POST /api/gigs` - Create gig (Freelancer)
-- `GET /api/gigs/my` - Get my gigs
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/gigs` | List gigs (paginated) |
+| GET | `/api/gigs/:id` | Gig detail |
+| POST | `/api/gigs` | Create gig (freelancer) |
+| GET | `/api/gigs/my` | My gigs |
 
-### Bids/Proposals
-- `POST /api/bids` - Submit proposal
-- `GET /api/bids/my` - Get my proposals
-- `PUT /api/bids/:id/accept` - Accept proposal
+### Proposals
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/bids` | Submit proposal |
+| GET | `/api/bids/my` | My proposals |
+| PUT | `/api/bids/:id/accept` | Accept proposal |
 
-### Chat
-- `POST /api/chat` - Access/create chat
-- `GET /api/chat` - Get all chats
-- `POST /api/message` - Send message
-- `GET /api/message/:chatId` - Get messages
+### Chat & Messages
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/chat` | Open or create chat |
+| GET | `/api/chat` | All chats |
+| POST | `/api/message` | Send message |
+| GET | `/api/message/:chatId` | Get messages |
 
 ### Notifications
-- `GET /api/notifications` - Get all user notifications
-- `PUT /api/notifications/:id/read` - Mark notification as read
-- `PUT /api/notifications/read-all` - Mark all notifications as read
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/notifications` | All notifications |
+| PUT | `/api/notifications/:id/read` | Mark as read |
+| PUT | `/api/notifications/read-all` | Mark all as read |
 
-### Reviews & Ratings
-- `POST /api/reviews` - Submit a review for a user
-- `GET /api/reviews/user/:userId` - Get reviews for a specific user
-
-## Screenshots
-*Screenshots of the Neo-Brutalism UI overhaul coming soon.*
+### Reviews
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/reviews` | Submit review |
+| GET | `/api/reviews/user/:userId` | User reviews |
 
 ## License
 
-MIT License - feel free to use this project for learning or building your own freelance platform.
+MIT — free to use for learning or building your own freelance platform.
 
 ## Author
 
-**Rahul**
-
----
-
-⭐ Star this repo if you found it helpful!
+**Rahul** — [GitHub](https://github.com/therahul-yo)
